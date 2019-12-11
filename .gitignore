@@ -1,0 +1,12 @@
+# Rust / Cargo things
+target/
+Cargo.lock
+
+# Temp files
+*~
+*.swp
+*.swo
+*#
+
+# Input / output
+

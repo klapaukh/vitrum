@@ -1,0 +1,5 @@
+*.toml text=auto
+*.rs text=auto
+*.lock text=auto
+.gitattributes text=auto
+.gitignore text=auto

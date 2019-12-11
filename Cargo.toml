@@ -1,0 +1,9 @@
+[workspace]
+
+members = [
+    "stl-loader",
+    "file-loader",
+    "live-tracer",
+    "vitrum"
+]
+
