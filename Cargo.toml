@@ -1,9 +1,10 @@
 [workspace]
 
 members = [
-    "stl-loader",
     "file-loader",
+    "geometry",
     "live-tracer",
+    "stl-loader",
     "vitrum"
 ]
 

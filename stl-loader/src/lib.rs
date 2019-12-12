@@ -1,5 +1,7 @@
+pub use geometry::{Face, Vector3D};
 use scanner_rust::{Scanner, ScannerError};
 use std::vec::Vec;
+
 
 /// An STL error wraps all the different types of errors you can get back from reading
 /// an STL file.
@@ -24,45 +26,6 @@ pub enum StlError {
 impl std::convert::From<ScannerError> for StlError {
     fn from(error: ScannerError) -> Self {
         StlError::ScanError(error)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Face {
-    pub normal: Vector3D,
-    pub a: Vector3D,
-    pub b: Vector3D,
-    pub c: Vector3D
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Vector3D {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32
-}
-
-impl Vector3D {
-    pub fn new(x: f32, y: f32,z: f32) -> Vector3D {
-        Vector3D {
-            x,
-            y,
-            z
-        }
-    }
-
-    pub fn read<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Vector3D, StlError> {
-        Ok(Vector3D {
-            x: ensure_f32(scan)?,
-            y: ensure_f32(scan)?,
-            z: ensure_f32(scan)?
-        })
-    }
-}
-
-impl std::fmt::Display for Vector3D {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:.2}, {:.2}, {:.2})", self.x, self.y, self.z)
     }
 }
 
@@ -133,15 +96,15 @@ fn read_body_ascii<T: std::io::Read>(scan: &mut Scanner<T>, name: &Option<String
                 }
             } else if s == String::from("facet") {
                 ensure_next(scan, String::from("normal"))?;
-                let normal = Vector3D::read(scan)?;
+                let normal = read_vector3d(scan)?;
                 ensure_next(scan, String::from("outer"))?;
                 ensure_next(scan, String::from("loop"))?;
                 ensure_next(scan, String::from("vertex"))?;
-                let a = Vector3D::read(scan)?;
+                let a = read_vector3d(scan)?;
                 ensure_next(scan, String::from("vertex"))?;
-                let b = Vector3D::read(scan)?;
+                let b = read_vector3d(scan)?;
                 ensure_next(scan, String::from("vertex"))?;
-                let c = Vector3D::read(scan)?;
+                let c = read_vector3d(scan)?;
                 ensure_next(scan, String::from("endloop"))?;
                 ensure_next(scan, String::from("endfacet"))?;
                 Ok(Some(Face {
@@ -181,6 +144,14 @@ fn ensure_f32<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<f32, StlError> 
         None => Err(StlError::UnexpectedEndOfFile(String::from("<float>"))),
         Some(s) => Ok(s)
     }
+}
+
+pub fn read_vector3d<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Vector3D, StlError> {
+    Ok(Vector3D {
+        x: ensure_f32(scan)?,
+        y: ensure_f32(scan)?,
+        z: ensure_f32(scan)?
+    })
 }
 
 #[cfg(test)]
