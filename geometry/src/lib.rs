@@ -30,6 +30,22 @@ impl std::fmt::Display for Vector3D {
     }
 }
 
+impl Plane for Face {
+    fn hits(&self, ray: &Ray) -> bool {
+        false
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Ray {
+    pub origin: Vector3D,
+    pub direction: Vector3D
+}
+
+pub trait Plane {
+    fn hits(&self, ray: &Ray) -> bool;
+}
+
 
 
 #[cfg(test)]
