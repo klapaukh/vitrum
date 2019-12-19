@@ -43,21 +43,21 @@ impl Plane<Face> for Face {
         // Note: ray . norm == 0 if they are perpendicular
         // ray . norm > 0 if the ray is facing the *back* of the triangle
         let ray_norm_dot: f32 = ray.direction * self.normal;
-        println!("{} * {} = {}", ray.direction, self.normal, ray_norm_dot);
+        // println!("{} * {} = {}", ray.direction, self.normal, ray_norm_dot);
         if ray_norm_dot > -epsilon {
-            println!("Ray facing back of triangle");
+            // println!("Ray facing back of triangle");
             return None;
         }
 
         // Find intersection of ray and triangle
         let d: f32 = self.normal * self.a;
-        println!("{} * {} = {}", self.normal, self.a, d);
+        // println!("{} * {} = {}", self.normal, self.a, d);
         let t: f32 = (d- (self.normal * ray.origin)) / ray_norm_dot;
 
-        println!("-(({} * {}) + {})/ {} = {}", self.normal, ray.origin, d, ray_norm_dot, t);
+        // println!("-(({} * {}) + {})/ {} = {}", self.normal, ray.origin, d, ray_norm_dot, t);
         if t < 0f32 {
             // point behind ray origin
-            println!("Hit behind ray origin at t = {}", t);
+            // println!("Hit behind ray origin at t = {}", t);
             return None;
         }
 
@@ -69,7 +69,7 @@ impl Plane<Face> for Face {
         let other: Vector3D = hit - self.a;
         let c: Vector3D = edge ^ other;
         if self.normal * c < 0f32 {
-            println!("Missed Edge 1");
+            // println!("Missed Edge 1");
             return None;  // P is on the right side
         }
 
@@ -78,7 +78,7 @@ impl Plane<Face> for Face {
         let other = hit - self.b;
         let c = edge ^ other;
         if self.normal * c < 0f32 {
-            println!("Missed Edge 2");
+            // println!("Missed Edge 2");
             return None;  // P is on the right side
         }
 
@@ -87,12 +87,12 @@ impl Plane<Face> for Face {
         let other = hit - self.c;
         let c = edge ^ other;
         if self.normal * c < 0f32 {
-            println!("Missed Edge 3");
+            // println!("Missed Edge 3");
             return None;  // P is on the right side
         }
 
         // Assign the collision point
-        println!("Hit!");
+        // println!("Hit!");
         Some(
             Collision {
                 object: self.clone(),

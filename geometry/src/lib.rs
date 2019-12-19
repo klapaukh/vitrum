@@ -124,7 +124,12 @@ mod tests {
             Vector3D::new( 1.0,  3.0,  3.0),
             Vector3D::new( 1.0, -1.0,  3.0)
         );
-        let v = vec![face3, face1.clone(), face2];
+        let face4 = Face::from_points(
+            Vector3D::new(-2.0, -1.0,  -3.0),
+            Vector3D::new( 1.0,  3.0,  -3.0),
+            Vector3D::new( 1.0, -1.0,  -3.0)
+        );
+        let v = vec![face3, face1.clone(), face2, face4];
         let r = Ray::new(Vector3D::new(0.0, 0.0, 0.0),
                          Vector3D::new(0.0, 0.0, 1.0));
 

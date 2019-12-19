@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 file-loader = { path = "../file-loader" }
+geometry    = { path = "../geometry" }
+png         = "0.15-2"
