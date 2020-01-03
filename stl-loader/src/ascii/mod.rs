@@ -1,15 +1,8 @@
 //! Functions for reading ASCII STL files
 
 use geometry::{Face, Vector3D};
-use scanner_rust::{Scanner, ScannerError};
+use scanner_rust::Scanner;
 use super::common::StlError;
-
-
-impl std::convert::From<ScannerError> for StlError {
-    fn from(error: ScannerError) -> Self {
-        StlError::ScanError(error)
-    }
-}
 
 pub fn read_file_ascii(filename: &str) -> Result<Vec<Face>, StlError> {
     println!("Reading STL file {}", filename);
