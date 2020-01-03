@@ -25,8 +25,6 @@ impl Face {
     }
 }
 
-
-
 impl PartialEq for Face {
     fn eq(&self, other: &Self) -> bool {
         self.normal.normalize() == other.normal.normalize() &&
@@ -100,5 +98,22 @@ impl Plane<Face> for Face {
                 distance: t
             }
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Face, Vector3D};
+
+    #[test]
+    fn test_compute_normal() {
+        let a = Vector3D::new(1.0, 2.0, 0.0);
+        let b = Vector3D::new(-1.0, 2.0, 1.0);
+        let c = Vector3D::new(-1.0, 2.0, -1.0);
+        let f = Face::from_points(a, b, c);
+
+        let normal = Vector3D::new(0.0, -1.0, 0.0);
+
+        assert_eq!(f.normal, normal);
     }
 }
