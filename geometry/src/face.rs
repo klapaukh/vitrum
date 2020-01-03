@@ -99,6 +99,14 @@ impl Plane<Face> for Face {
             }
         )
     }
+
+    fn min_extents(&self) -> Vector3D {
+        self.a.min(self.b).min(self.c)
+    }
+
+    fn max_extents(&self) -> Vector3D {
+        self.a.max(self.b).max(self.c)
+    }
 }
 
 #[cfg(test)]

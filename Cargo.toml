@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "bvh",
     "file-loader",
     "geometry",
     "live-tracer",

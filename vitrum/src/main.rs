@@ -1,7 +1,9 @@
 use file_loader;
 use geometry::{Vector3D, Ray, Plane};
 use std::vec::Vec;
+use bvh::BoundingVolumeHierarchy;
 
+use std::f32;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufWriter;
@@ -11,13 +13,15 @@ fn deg_to_rad(deg: f32) -> f32{
 }
 
 fn main() {
-    let filename = "data/cube.stl";
+    let filename = "data/sphere.stl";
 
     println!("You have selected the file {} to open", filename);
 
     let model = file_loader::load_file(filename).unwrap();
 
-    let origin = Vector3D::new(0.5, 0.5, -1.2);
+    let model = BoundingVolumeHierarchy::new(&model);
+
+    let origin = Vector3D::new(1.0, 0.0, -2.2);
 
     let up = Vector3D::new(0.0, 1.0, 0.0).normalize();
     let forwards = Vector3D::new(0.0, 0.0, 1.0).normalize();

@@ -1,3 +1,5 @@
+use std::f32;
+
 mod vector3;
 mod face;
 
@@ -22,12 +24,32 @@ impl Ray {
 
 pub trait Plane<T> {
     fn hits(&self, ray: &Ray) -> Option<Collision<T>>;
+    fn min_extents(&self) -> Vector3D;
+    fn max_extents(&self) -> Vector3D;
 }
 
+#[derive(Clone)]
 pub struct Collision<T> {
     pub object: T,
     pub contact_point: Vector3D,
     pub distance: f32
+}
+
+impl <T> Collision<T> {
+    pub fn min(self, other: Self) -> Self {
+        if self.distance < other.distance {
+            return self
+        }
+        return other
+    }
+
+    pub fn min_optional(self, other: Option<Collision<T>>) -> Collision<T> {
+        if let Some(o) = other {
+            return self.min(o);
+        } else {
+            return self;
+        }
+    }
 }
 
 impl <T: Plane<T>> Plane<T> for Vec<T> {
@@ -44,6 +66,22 @@ impl <T: Plane<T>> Plane<T> for Vec<T> {
             }
         }
         plane
+    }
+
+    fn min_extents(&self) -> Vector3D {
+        let mut min = Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+        for f in self {
+            min = min.min(f.min_extents());
+        }
+        min
+    }
+
+    fn max_extents(&self) -> Vector3D {
+        let mut max = Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+        for f in self {
+            max = max.max(f.max_extents());
+        }
+        max
     }
 }
 

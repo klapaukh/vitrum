@@ -33,6 +33,17 @@ impl Vector3D {
         self.z == 0.0
 
     }
+    pub fn min(&self , b: Vector3D) -> Vector3D {
+        Vector3D::new(self.x.min(b.x),
+                      self.y.min(b.y),
+                      self.z.min(b.z))
+    }
+
+    pub fn max(&self, b: Vector3D) -> Vector3D {
+        Vector3D::new(self.x.max(b.x),
+                      self.y.max(b.y),
+                      self.z.max(b.z))
+    }
 }
 
 impl ops::Add<Vector3D> for Vector3D {
