@@ -89,12 +89,13 @@ fn read_body_ascii<T: std::io::Read>(scan: &mut Scanner<T>, name: &Option<String
                 let c = read_vector3d(scan)?;
                 ensure_next(scan, String::from("endloop"))?;
                 ensure_next(scan, String::from("endfacet"))?;
-                Ok(Some(Face {
-                    normal,
-                    a,
-                    b,
-                    c
-                }))
+                Ok(Some(
+                    if normal.is_zero() {
+                        Face::from_points(a, b, c)
+                    } else {
+                        Face::new(normal, a, b, c)
+                    }
+                ))
             } else {
                 Err(StlError::UnknownSymbol(s))
             }
