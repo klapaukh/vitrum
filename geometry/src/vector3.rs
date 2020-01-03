@@ -26,6 +26,13 @@ impl Vector3D {
                 self.y * self.y +
                 self.z * self.z)
     }
+
+    pub fn is_zero(&self) -> bool {
+        self.x == 0.0 &&
+        self.y == 0.0 &&
+        self.z == 0.0
+
+    }
 }
 
 impl ops::Add<Vector3D> for Vector3D {
