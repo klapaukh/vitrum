@@ -3,6 +3,7 @@ use std::f32;
 mod vector3;
 mod face;
 
+pub use vector3::{ZERO, X, Y, Z};
 pub use vector3::Vector3D;
 pub use face::Face;
 
