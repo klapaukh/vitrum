@@ -8,6 +8,15 @@ pub struct Vector3D {
     pub z: f32
 }
 
+/// The Zero vector
+pub const ZERO: Vector3D = Vector3D { x: 0.0, y: 0.0, z: 0.0};
+/// The X axis vector
+pub const X:    Vector3D = Vector3D { x: 1.0, y: 0.0, z: 0.0};
+/// The Y axis Vector
+pub const Y:    Vector3D = Vector3D { x: 0.0, y: 1.0, z: 0.0};
+/// The Z axis Vector
+pub const Z:    Vector3D = Vector3D { x: 0.0, y: 0.0, z: 1.0};
+
 impl Vector3D {
     pub fn new(x: f32, y: f32,z: f32) -> Vector3D {
         Vector3D {
