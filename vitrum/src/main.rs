@@ -1,3 +1,5 @@
+use argparse::{ArgumentParser, StoreOption};
+
 use file_loader;
 use geometry::{Vector3D, Ray, Plane, Collision, Face};
 use std::vec::Vec;
@@ -17,11 +19,23 @@ fn lambert(ray: &Ray, collision: &Collision<Face>) -> u8 {
 }
 
 fn main() {
-    let filename = "data/dragon.stl";
+    let mut filename: Option<String> = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.set_description("Render output to image.png");
+        ap.refer(&mut filename)
+            .add_option(&["-f", "--file"], StoreOption,
+            "File to parse")
+            .required();
+        ap.parse_args_or_exit();
+    }
+
+    let filename = filename.unwrap();
 
     println!("You have selected the file {} to open", filename);
 
-    let model = file_loader::load_file(filename).unwrap();
+    let model = file_loader::load_file(&filename).unwrap();
 
     let mut min = Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
     let mut max = Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);

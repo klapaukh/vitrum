@@ -8,7 +8,7 @@ pub enum MeshError {
     ScanError(stl_loader::StlError)
 }
 
-pub fn load_file(filename: &str) -> Result<Vec<stl_loader::Face>, MeshError> {
+pub fn load_file(filename: &String) -> Result<Vec<stl_loader::Face>, MeshError> {
     println!("Loading file {}", filename);
 
     if filename.ends_with(".stl") {
@@ -25,7 +25,7 @@ pub fn load_file(filename: &str) -> Result<Vec<stl_loader::Face>, MeshError> {
 mod tests {
     #[test]
     fn reject_not_stl() {
-        assert!(crate::load_file("test.3ds").is_err(), "Must reject 3ds file");
-        assert!(crate::load_file("teststl").is_err(), "Must stl must be prefixed by a . in filename");
+        assert!(crate::load_file(&"test.3ds".to_owned()).is_err(), "Must reject 3ds file");
+        assert!(crate::load_file(&"teststl".to_owned()).is_err(), "Must stl must be prefixed by a . in filename");
     }
 }
