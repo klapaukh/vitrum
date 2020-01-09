@@ -1,10 +1,14 @@
 use std::ops;
 use std::cmp;
 
+/// Data structure to represent a 3 space vector of f32.
 #[derive(Debug, Copy, Clone)]
 pub struct Vector3D {
+    /// X coordinate
     pub x: f32,
+    /// Y coordinate
     pub y: f32,
+    /// Z coordinate
     pub z: f32
 }
 
@@ -18,6 +22,7 @@ pub const Y:    Vector3D = Vector3D { x: 0.0, y: 1.0, z: 0.0};
 pub const Z:    Vector3D = Vector3D { x: 0.0, y: 0.0, z: 1.0};
 
 impl Vector3D {
+    /// Create a new vector from 3 points
     pub fn new(x: f32, y: f32,z: f32) -> Vector3D {
         Vector3D {
             x,
@@ -26,28 +31,34 @@ impl Vector3D {
         }
     }
 
+    /// Create a normalised (unit length) version of the vector
     pub fn normalize(&self) -> Vector3D {
         *self / self.length()
     }
 
+    /// Compute the Euclidean length of the vector
     pub fn length(&self) -> f32 {
         f32::sqrt(self.x * self.x +
                 self.y * self.y +
                 self.z * self.z)
     }
 
+    /// Test if this is the zero vector
     pub fn is_zero(&self) -> bool {
         self.x == 0.0 &&
         self.y == 0.0 &&
         self.z == 0.0
 
     }
+
+    /// Vectorised pairwise minimum. Returns a vector of the minimums for each cooridinate.
     pub fn min(&self , b: Vector3D) -> Vector3D {
         Vector3D::new(self.x.min(b.x),
                       self.y.min(b.y),
                       self.z.min(b.z))
     }
 
+    /// Vectorised pairwise maximum. Returns a vector of the maximums for each cooridinate.
     pub fn max(&self, b: Vector3D) -> Vector3D {
         Vector3D::new(self.x.max(b.x),
                       self.y.max(b.y),
@@ -82,6 +93,7 @@ impl ops::Sub<Vector3D> for Vector3D {
 impl ops::BitXor for Vector3D {
     type Output = Self;
 
+    /// Vector Cross Product
     fn bitxor(self, rhs: Self) -> Self::Output {
         Vector3D {
             x: self.y * rhs.z - self.z * rhs.y,
@@ -105,7 +117,7 @@ impl ops::Mul<Vector3D> for Vector3D {
 impl ops::Mul<Vector3D> for f32 {
     type Output = Vector3D;
 
-    /// Implements the dot product
+    /// Vector * Scalar
     fn mul(self, rhs: Vector3D) -> Vector3D {
         Vector3D {
             x: rhs.x * self,
@@ -131,7 +143,7 @@ impl ops::Mul<f32> for Vector3D {
 impl ops::Div<f32> for Vector3D {
     type Output = Vector3D;
 
-    /// Implements division
+    /// Implements scalar division
     fn div(self, rhs: f32) -> Vector3D {
         Vector3D {
             x: self.x / rhs,
@@ -230,5 +242,26 @@ mod tests {
         println!("{}", 0f32 == -0f32);
         assert_eq!(x ^ y , z);
         assert_eq!(y ^ x , -1.0 * z);
+    }
+
+    #[test]
+    fn test_min() {
+        let x = Vector3D::new(1.0, 4.0, 3.0);
+        let y = Vector3D::new(7.0, 2.0, 5.0);
+        let z = x.min(y);
+        let zz = y.min(x);
+        assert_eq!(z, zz);
+        assert_eq!(z, Vector3D::new(1.0, 2.0, 3.0));
+
+    }
+
+    #[test]
+    fn test_max() {
+        let x = Vector3D::new(1.0, 4.0, 3.0);
+        let y = Vector3D::new(7.0, 2.0, 5.0);
+        let z = x.max(y);
+        let zz = y.max(x);
+        assert_eq!(z, zz);
+        assert_eq!(z, Vector3D::new(7.0, 4.0, 5.0));
     }
 }
