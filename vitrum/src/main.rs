@@ -1,5 +1,5 @@
 use file_loader;
-use geometry::{Vector3D, Ray, Plane};
+use geometry::{Vector3D, Ray, Plane, Collision, Face};
 use std::vec::Vec;
 use bvh::BoundingVolumeHierarchy;
 
@@ -12,14 +12,35 @@ fn deg_to_rad(deg: f32) -> f32{
     std::f32::consts::PI * deg / 180.0
 }
 
+fn lambert(ray: &Ray, collision: &Collision<Face>) -> u8 {
+    (255.0  * (1.0 - (collision.object.normal.normalize() * ray.direction.normalize()))) as u8
+}
+
 fn main() {
-    let filename = "data/sphere.stl";
+    let filename = "data/dragon.stl";
 
     println!("You have selected the file {} to open", filename);
 
     let model = file_loader::load_file(filename).unwrap();
 
+    let mut min = Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+    let mut max = Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+
+    for face in &model {
+        min = min.min(face.a);
+        min = min.min(face.b);
+        min = min.min(face.c);
+
+        max = max.max(face.a);
+        max = max.max(face.b);
+        max = max.max(face.c);
+    }
+
     let model = BoundingVolumeHierarchy::new(&model);
+
+    println!("BVH extents {} {}", model.min_extents(), model.max_extents());
+    assert_eq!(model.min_extents(), min);
+    assert_eq!(model.max_extents(), max);
 
     let origin = Vector3D::new(1.0, 0.0, -2.2);
 
@@ -54,14 +75,15 @@ fn main() {
             let ray = Ray::new(origin, point - origin);
             // println!("{:?}", ray);
             let hit = model.hits(&ray);
-            if let Some(_) = hit {
+            if let Some(c) = hit {
+                let  i = lambert(&ray, &c);
                 data.push(0);
-                data.push(255);
+                data.push(i);
                 data.push(0);
                 data.push(255);
                 // println!("Hit");
             } else {
-                data.push(255);
+                data.push(0);
                 data.push(0);
                 data.push(0);
                 data.push(255);
