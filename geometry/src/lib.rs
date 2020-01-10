@@ -39,16 +39,17 @@ pub struct Collision<T> {
 impl <T> Collision<T> {
     pub fn min(self, other: Self) -> Self {
         if self.distance < other.distance {
-            return self
+            self
+        } else {
+            other
         }
-        return other
     }
 
     pub fn min_optional(self, other: Option<Collision<T>>) -> Collision<T> {
         if let Some(o) = other {
-            return self.min(o);
+            self.min(o)
         } else {
-            return self;
+            self
         }
     }
 }

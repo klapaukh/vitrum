@@ -8,7 +8,7 @@ pub enum MeshError {
     ScanError(stl_loader::StlError)
 }
 
-pub fn load_file(filename: &String) -> Result<Vec<stl_loader::Face>, MeshError> {
+pub fn load_file(filename: &str) -> Result<Vec<stl_loader::Face>, MeshError> {
     println!("Loading file {}", filename);
 
     if filename.ends_with(".stl") {

@@ -44,12 +44,11 @@ fn read_header_ascii<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Option<S
         None => Ok(None)
     };
 
-    match iter.next() {
-        Some(_) => return Err(StlError::TooMuchInHeader),
-        None => ()
+    if iter.next().is_some() {
+        return Err(StlError::TooMuchInHeader);
     };
 
-    return name;
+    name
 }
 
 /// Read a single face from the body of an ASCII STL file
@@ -69,14 +68,14 @@ fn read_body_ascii<T: std::io::Read>(scan: &mut Scanner<T>, name: &Option<String
     match result {
         None => Err(StlError::NoEndSolid),
         Some(s) => {
-            if s == String::from("endsolid") {
+            if s == "endsolid" {
                 let end_name = scan.next()?;
                 if *name != end_name {
                     Err(StlError::MissmatchedSolidNames(name.clone(), end_name))
                 }else {
                     Ok(None)
                 }
-            } else if s == String::from("facet") {
+            } else if s == "facet" {
                 ensure_next(scan, String::from("normal"))?;
                 let normal = read_vector3d(scan)?;
                 ensure_next(scan, String::from("outer"))?;

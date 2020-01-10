@@ -55,14 +55,14 @@ impl <T: Plane<S> + Display, S> BoundingVolumeHierarchy<T, S> {
         self.pretty_print_helper(&"".to_owned())
     }
 
-    fn pretty_print_helper(&self, padding: &String) {
+    fn pretty_print_helper(&self, padding: &str) {
         match self {
             BoundingVolumeHierarchy::Empty => println!("{}E", padding),
             BoundingVolumeHierarchy::Child(f) => println!("{}Child - {} {} ({})",
                 padding, f.min_extents(), f.max_extents(), f),
             BoundingVolumeHierarchy::Node {min, max, left, right, ..} => {
                 println!("{}Node - {} {}", padding, min, max);
-                let padding = padding.clone().add(" ");
+                let padding = padding.to_owned().add(" ");
                 left.pretty_print_helper(&padding);
                 right.pretty_print_helper(&padding);
             }
@@ -256,7 +256,7 @@ impl <T: Plane<S>, S> Plane<S> for BoundingVolumeHierarchy<T, S> {
         match self {
             BoundingVolumeHierarchy::Empty => Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
             BoundingVolumeHierarchy::Child(f) => f.min_extents(),
-            BoundingVolumeHierarchy::Node {min : m, ..} => m.clone()
+            BoundingVolumeHierarchy::Node {min : m, ..} => *m
         }
     }
 
@@ -264,7 +264,7 @@ impl <T: Plane<S>, S> Plane<S> for BoundingVolumeHierarchy<T, S> {
         match self {
             BoundingVolumeHierarchy::Empty => Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY),
             BoundingVolumeHierarchy::Child(f) => f.max_extents(),
-            BoundingVolumeHierarchy::Node {max : m, ..} => m.clone()
+            BoundingVolumeHierarchy::Node {max : m, ..} => *m
         }
     }
 
