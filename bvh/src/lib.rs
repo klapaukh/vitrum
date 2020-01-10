@@ -2,8 +2,41 @@ use geometry::{Plane, Ray, Collision, Vector3D, X, Y, Z};
 use std::marker::PhantomData;
 
 use std::boxed::Box;
+use std::collections::BinaryHeap;
 use std::vec::Vec;
 use std::f32;
+use std::fmt::Display;
+use std::ops::Add;
+
+use std::cmp::{Ord, Ordering};
+
+struct Cost<T> {
+    data: T,
+    cost: f32
+}
+
+impl <T: Plane<S>, S> Ord for Cost<&BoundingVolumeHierarchy<T, S>> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Panics if it is NAN. You cannot have a NAN cost.
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl <T: Plane<S>, S> PartialOrd for Cost<&BoundingVolumeHierarchy<T, S>> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        other.cost.partial_cmp(&self.cost)
+    }
+}
+
+impl <T: Plane<S>, S> Eq for Cost<&BoundingVolumeHierarchy<T, S>> {
+}
+
+impl <T: Plane<S>, S> PartialEq for Cost<&BoundingVolumeHierarchy<T, S>> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cost == other.cost
+    }
+}
+
 
 pub enum BoundingVolumeHierarchy<T: Plane<S>, S> {
     Node {
@@ -15,6 +48,26 @@ pub enum BoundingVolumeHierarchy<T: Plane<S>, S> {
     },
     Child (T),
     Empty
+}
+
+impl <T: Plane<S> + Display, S> BoundingVolumeHierarchy<T, S> {
+    pub fn pretty_print(&self) {
+        self.pretty_print_helper(&"".to_owned())
+    }
+
+    fn pretty_print_helper(&self, padding: &String) {
+        match self {
+            BoundingVolumeHierarchy::Empty => println!("{}E", padding),
+            BoundingVolumeHierarchy::Child(f) => println!("{}Child - {} {} ({})",
+                padding, f.min_extents(), f.max_extents(), f),
+            BoundingVolumeHierarchy::Node {min, max, left, right, ..} => {
+                println!("{}Node - {} {}", padding, min, max);
+                let padding = padding.clone().add(" ");
+                left.pretty_print_helper(&padding);
+                right.pretty_print_helper(&padding);
+            }
+        }
+    }
 }
 
 impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
@@ -36,29 +89,58 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
         }
     }
 
-    fn hits_internal(&self, ray: &Ray, t: Vector3D, s: Vector3D) -> Option<Collision<S>> {
+    fn collide_child<'a>(&'a self, ray: &Ray, t: Vector3D, s: Vector3D,
+                     min_t: &mut f32, result: &mut Option<Collision<S>>,
+                     heap: &mut BinaryHeap<Cost<&'a BoundingVolumeHierarchy<T, S>>>) {
         match self {
-            BoundingVolumeHierarchy::Empty => None,
-            BoundingVolumeHierarchy::Child(f) => f.hits(ray),
-            BoundingVolumeHierarchy::Node { .. } => self.collide(ray, t, s)
+            BoundingVolumeHierarchy::Empty => (),
+            BoundingVolumeHierarchy::Child(p) => {
+                let hit = p.hits(ray);
+                if let Some(c) = hit {
+                    if c.distance < *min_t {
+                        *min_t = c.distance;
+                        *result = Some(c);
+                    }
+                }
+            },
+            BoundingVolumeHierarchy::Node { .. } => {
+                let (h, t) = self.collide_box(t, s);
+                if h && t < *min_t {
+                    heap.push(Cost { data: &self , cost: t});
+                }
+            }
         }
     }
 
     fn collide(&self, ray: &Ray, t: Vector3D, s: Vector3D) -> Option<Collision<S>> {
-        if let BoundingVolumeHierarchy::Node {left, right, ..} = self {
-            if self.collide_box(t, s) {
-                let left_hit  = left.hits_internal(ray, t, s);
-                let right_hit = right.hits_internal(ray, t, s);
-                match left_hit {
-                    None => return right_hit,
-                    Some(h) => return Some(h.min_optional(right_hit))
+        if let BoundingVolumeHierarchy::Node {..} = self {
+            let mut heap: BinaryHeap<Cost<&BoundingVolumeHierarchy<T, S>>> = BinaryHeap::new();
+            let mut min_t = f32::INFINITY;
+            let mut result: Option<Collision<S>> = None;
+            {
+                let (h, t) = self.collide_box(t, s);
+                if h {
+                    heap.push(Cost{ data: &self, cost: t});
                 }
             }
+            while !heap.is_empty() {
+                let element = heap.pop().unwrap();
+                if element.cost > min_t {
+                    return result;
+                }
+                if let BoundingVolumeHierarchy::Node {left, right, ..} = element.data {
+                    left.collide_child(ray, t, s, &mut min_t, &mut result, &mut heap);
+                    right.collide_child(ray, t, s, &mut min_t, &mut result, &mut heap);
+                } else {
+                    panic!("Non node child put into queue");
+                }
+            }
+            return result;
         }
         None
     }
 
-    fn collide_box(&self, t: Vector3D, s: Vector3D) -> bool {
+    fn collide_box(&self, t: Vector3D, s: Vector3D) -> (bool, f32) {
         if let BoundingVolumeHierarchy::Node {min, max, ..} = self {
             let mut min_t = f32::NEG_INFINITY;
             let mut max_t = f32::INFINITY;
@@ -68,20 +150,30 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
             max_t = f32::min(max_t, u);
 
             if min_t == f32::INFINITY || min_t > max_t {
-                return false;
+                return (false, f32::INFINITY);
             }
             let (l ,u) = Self::collide_slab(t.y, s.y, min.y, max.y);
             min_t = f32::max(min_t, l);
             max_t = f32::min(max_t, u);
 
             if min_t == f32::INFINITY || min_t > max_t {
-                return false;
+                return (false, f32::INFINITY);
             }
             let (l ,u) = Self::collide_slab(t.z, s.z, min.z, max.z);
             min_t = f32::max(min_t, l);
             max_t = f32::min(max_t, u);
 
-            return  min_t != f32::INFINITY && max_t >= min_t;
+            return if  min_t != f32::INFINITY && max_t >= min_t {
+                if max_t <= 0.0 {
+                    (false, f32::INFINITY)
+                } else if min_t >= 0.0 {
+                    (true, min_t)
+                } else {
+                    (true, 0.0)
+                }
+            } else {
+                (false, f32::INFINITY)
+            };
         }
         panic!("Collide_box called on a non node");
     }
@@ -115,22 +207,32 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
 }
 
 impl <T: Plane<S> + Clone, S> BoundingVolumeHierarchy<T, S> {
-    pub fn new(faces: &Vec<T>) -> BoundingVolumeHierarchy<T, S> {
-        let size = faces.len();
-        BoundingVolumeHierarchy::construct_bvh(&faces, 0, size)
+    pub fn new(faces: Vec<T>) -> BoundingVolumeHierarchy<T, S> {
+        <BoundingVolumeHierarchy<T, S>>::new_helper(faces, 0)
     }
 
-    fn construct_bvh(faces: &Vec<T>, min: usize, max: usize) -> BoundingVolumeHierarchy<T, S> {
-        if min == max {
+    fn new_helper(faces: Vec<T>, axis: u8) -> BoundingVolumeHierarchy<T, S> {
+        let helper = |a: &T, b: &T| {
+            match axis {
+                0 => a.min_extents().x.partial_cmp(&b.min_extents().x).unwrap(),
+                1 => a.min_extents().y.partial_cmp(&b.min_extents().y).unwrap(),
+                2 => a.min_extents().z.partial_cmp(&b.min_extents().z).unwrap(),
+                _ => panic!("Unknown axis!")
+            }
+        };
+        if faces.is_empty() {
             BoundingVolumeHierarchy::empty()
-        } else if max - min == 1 {
+        } else if faces.len() == 1 {
             // Small enough to construct directly
-            BoundingVolumeHierarchy::leaf(faces[min].clone())
+            BoundingVolumeHierarchy::leaf(faces[0].clone())
         } else {
             // Recurse
-            let mid = (min + max) /  2;
-            let left  = BoundingVolumeHierarchy::construct_bvh(faces, min, mid);
-            let right = BoundingVolumeHierarchy::construct_bvh(faces, mid, max);
+            let mut faces = faces;
+            let mut faces2 = faces.split_off(faces.len() / 2);
+            faces.sort_by(helper);
+            faces2.sort_by(helper);
+            let left  = BoundingVolumeHierarchy::new_helper(faces, (axis + 1) % 3);
+            let right = BoundingVolumeHierarchy::new_helper(faces2, (axis + 1) % 3);
             BoundingVolumeHierarchy::node(left, right)
         }
     }
