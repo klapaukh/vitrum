@@ -1,6 +1,7 @@
 use super::vector3::Vector3D;
 use super::{Plane, Ray, Collision};
 use std::cmp::PartialEq;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Face {
@@ -22,6 +23,12 @@ impl Face {
             normal: ((b - a) ^ (c - b)).normalize(),
             a, b, c
         }
+    }
+}
+
+impl Display for Face {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {} | {})", self.a, self.b, self.c, self.normal)
     }
 }
 
