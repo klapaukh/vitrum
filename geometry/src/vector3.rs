@@ -64,6 +64,56 @@ impl Vector3D {
                       self.y.max(b.y),
                       self.z.max(b.z))
     }
+
+    pub fn min_value(&self) -> f32 {
+        self.x.min(self.y).min(self.z)
+    }
+
+    pub fn max_value(&self) -> f32 {
+        self.x.max(self.y).max(self.z)
+    }
+
+    pub fn abs(&self) -> Vector3D {
+        Vector3D::new(self.x.abs(),
+                      self.y.abs(),
+                      self.z.abs())
+    }
+
+    pub fn set_x(&self, value: f32) -> Vector3D {
+        Vector3D::new(value,
+                      self.y,
+                      self.z)
+    }
+
+    pub fn set_y(&self, value: f32) -> Vector3D {
+        Vector3D::new(self.x,
+                      value,
+                      self.z)
+    }
+
+    pub fn set_z(&self, value: f32) -> Vector3D {
+        Vector3D::new(self.x,
+                      self.y,
+                      value)
+    }
+
+    pub fn proj_x(&self) -> Vector3D {
+        Vector3D::new(self.x,
+                      0.0,
+                      0.0)
+    }
+
+    pub fn proj_y(&self) -> Vector3D {
+        Vector3D::new(0.0,
+                      self.y,
+                      0.0)
+    }
+
+    pub fn proj_z(&self) -> Vector3D {
+        Vector3D::new(0.0,
+                      0.0,
+                      self.z)
+    }
 }
 
 impl ops::Add<Vector3D> for Vector3D {
