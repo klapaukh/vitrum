@@ -268,6 +268,22 @@ impl <T: Plane<S>, S> Plane<S> for BoundingVolumeHierarchy<T, S> {
         }
     }
 
+    fn translate(&self, t: Vector3D) -> Self {
+        match self {
+            BoundingVolumeHierarchy::Empty => BoundingVolumeHierarchy::Empty,
+            BoundingVolumeHierarchy::Child(f) => BoundingVolumeHierarchy::Child(f.translate(t)),
+            BoundingVolumeHierarchy::Node {max, min, left, right, .. } => {
+                BoundingVolumeHierarchy::Node {
+                    min: *min + t,
+                    max: *max + t,
+                    left:  Box::from(left.translate(t)),
+                    right: Box::from(right.translate(t)),
+                    object_type: PhantomData
+                }
+            }
+        }
+    }
+
 }
 
 

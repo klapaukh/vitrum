@@ -114,6 +114,13 @@ impl Plane<Face> for Face {
     fn max_extents(&self) -> Vector3D {
         self.a.max(self.b).max(self.c)
     }
+
+    fn translate(&self, t: Vector3D) -> Self {
+        Face::new(self.normal,
+                  self.a + t,
+                  self.b + t,
+                  self.c + t)
+    }
 }
 
 #[cfg(test)]
