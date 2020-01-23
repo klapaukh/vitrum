@@ -4,7 +4,14 @@ use super::Vector3D;
 pub struct Collision<T> {
     pub object: T,
     pub contact_point: Vector3D,
-    pub distance: f32
+    pub distance: f32,
+    pub direction: CollisionDirection
+}
+
+#[derive(Copy, Clone)]
+pub enum CollisionDirection {
+    FrontFace,
+    BackFace
 }
 
 impl <T> Collision<T> {

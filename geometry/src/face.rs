@@ -1,5 +1,5 @@
 use super::vector3::Vector3D;
-use super::{Plane, Ray, Collision};
+use super::{Plane, Ray, Collision, CollisionDirection};
 use std::cmp::PartialEq;
 use std::fmt::Display;
 
@@ -49,10 +49,12 @@ impl Plane<Face> for Face {
         // ray . norm > 0 if the ray is facing the *back* of the triangle
         let ray_norm_dot: f32 = ray.direction * self.normal;
         // println!("{} * {} = {}", ray.direction, self.normal, ray_norm_dot);
-        if ray_norm_dot > -epsilon {
-            // println!("Ray facing back of triangle");
-            return None;
-        }
+        let collision_face = if ray_norm_dot > -epsilon {
+                // println!("Ray facing back of triangle");
+                CollisionDirection::BackFace
+            } else {
+                CollisionDirection::FrontFace
+            };
 
         // Find intersection of ray and triangle
         let d: f32 = self.normal * self.a;
@@ -102,7 +104,8 @@ impl Plane<Face> for Face {
             Collision {
                 object: self.clone(),
                 contact_point: hit,
-                distance: t
+                distance: t,
+                direction: collision_face
             }
         )
     }

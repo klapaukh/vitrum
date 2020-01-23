@@ -8,7 +8,7 @@ mod plane;
 pub use vector3::{ZERO, X, Y, Z};
 pub use vector3::Vector3D;
 pub use face::Face;
-pub use collision::Collision;
+pub use collision::{Collision, CollisionDirection};
 pub use plane::Plane;
 
 #[derive(Debug, Clone)]
