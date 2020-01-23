@@ -71,15 +71,15 @@ impl <T: Plane<S> + Display, S> BoundingVolumeHierarchy<T, S> {
 }
 
 impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
-    fn leaf(face: T) -> BoundingVolumeHierarchy<T, S> {
+    pub fn leaf(face: T) -> BoundingVolumeHierarchy<T, S> {
         BoundingVolumeHierarchy::Child(face)
     }
 
-    fn empty() -> BoundingVolumeHierarchy<T, S> {
+    pub fn empty() -> BoundingVolumeHierarchy<T, S> {
         BoundingVolumeHierarchy::Empty
     }
 
-    fn node(left: BoundingVolumeHierarchy<T,S> , right: BoundingVolumeHierarchy<T,S>) -> BoundingVolumeHierarchy<T, S> {
+    pub fn node(left: BoundingVolumeHierarchy<T,S> , right: BoundingVolumeHierarchy<T,S>) -> BoundingVolumeHierarchy<T, S> {
         BoundingVolumeHierarchy::Node {
             min: left.min_extents().min(right.min_extents()),
             max: left.max_extents().max(right.max_extents()),

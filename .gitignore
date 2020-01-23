@@ -1,6 +1,7 @@
 # Rust / Cargo things
 target/
 Cargo.lock
+flamegraph.svg
 
 # Temp files
 *~

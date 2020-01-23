@@ -10,6 +10,10 @@ use std::path::Path;
 use std::fs::File;
 use std::io::BufWriter;
 
+mod stack;
+
+use stack::stack;
+
 fn deg_to_rad(deg: f32) -> f32{
     std::f32::consts::PI * deg / 180.0
 }
@@ -50,22 +54,27 @@ fn main() {
         max = max.max(face.c);
     }
 
-    let model = BoundingVolumeHierarchy::new(&model);
+    let model = BoundingVolumeHierarchy::new(model);
+    let model = stack(model);
+    println!("BVH with extents {} {}", model.min_extents(), model.max_extents());
 
-    println!("BVH extents {} {}", model.min_extents(), model.max_extents());
-    assert_eq!(model.min_extents(), min);
-    assert_eq!(model.max_extents(), max);
 
-    let origin = Vector3D::new(1.0, 0.0, -2.2);
+    let x_fov: f32 = deg_to_rad(90.0);
+    let y_fov: f32 = deg_to_rad(90.0);
 
     let up = Vector3D::new(0.0, 1.0, 0.0).normalize();
     let forwards = Vector3D::new(0.0, 0.0, 1.0).normalize();
     let left = (forwards ^ up).normalize();
 
-    // println!("x = {}, y = {}, z = {}", left, up, forwards);
+    let model_center = (model.min_extents() + model.max_extents()) / 2.0;
 
-    let x_fov: f32 = deg_to_rad(90.0);
-    let y_fov: f32 = deg_to_rad(90.0);
+    let dx = model.max_extents().x - model.min_extents().x;
+    let dist = (dx / 2.0) / f32::tan(x_fov / 2.0);
+
+    let origin = model_center - (dist * forwards);
+
+
+    // println!("x = {}, y = {}, z = {}", left, up, forwards);
 
     let x_dist_left: f32 = f32::tan(x_fov / 2.0);
     let y_dist_up: f32   = f32::tan(y_fov / 2.0);
@@ -107,7 +116,7 @@ fn main() {
     // For reading and opening files
     let path = Path::new(r"image.png");
     let file = File::create(path).unwrap();
-    let ref mut w = BufWriter::new(file);
+    let w = BufWriter::new(file);
 
     let mut encoder = png::Encoder::new(w, x_res as u32, y_res as u32);
     encoder.set_color(png::ColorType::RGBA);
