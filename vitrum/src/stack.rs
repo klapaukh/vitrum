@@ -5,7 +5,7 @@ pub fn stack<T: Plane<S>, S>(model: BoundingVolumeHierarchy<T, S>) -> BoundingVo
     let min_extents = model.min_extents();
     let max_extents = model.max_extents();
     let size = (max_extents - min_extents).abs().min_value();
-    let factor = (2 << 4) as f32;
+    let factor = (2 << 1) as f32;
     pyramid(min_extents, min_extents + (max_extents - min_extents) * factor, size, &model, min_extents)
 }
 

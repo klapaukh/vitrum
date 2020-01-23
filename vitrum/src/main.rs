@@ -1,25 +1,29 @@
 use argparse::{ArgumentParser, StoreOption};
 
 use file_loader;
-use geometry::{Vector3D, Ray, Plane, Collision, Face};
-use std::vec::Vec;
+use geometry::{Vector3D, Ray, Plane};
+
 use bvh::BoundingVolumeHierarchy;
 
+use std::vec::Vec;
 use std::f32;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufWriter;
 
 mod stack;
-
 use stack::stack;
+
+mod lambert;
+mod whitted;
+
+pub enum Renderer {
+    Whitted,
+    Lambert
+}
 
 fn deg_to_rad(deg: f32) -> f32{
     std::f32::consts::PI * deg / 180.0
-}
-
-fn lambert(ray: &Ray, collision: &Collision<Face>) -> u8 {
-    (255.0  * (1.0 - (collision.object.normal.normalize() * ray.direction.normalize()))) as u8
 }
 
 fn main() {
@@ -69,7 +73,7 @@ fn main() {
     let model_center = (model.min_extents() + model.max_extents()) / 2.0;
 
     let dx = model.max_extents().x - model.min_extents().x;
-    let dist = (dx / 2.0) / f32::tan(x_fov / 2.0);
+    let dist = (dx / 1.0) / f32::tan(x_fov / 2.0);
 
     let origin = model_center - (dist * forwards);
 
@@ -85,32 +89,39 @@ fn main() {
 
     let top_left = top_center + left * x_dist_left;
 
-    let x_res: usize = 500;
-    let y_res: usize = 500;
+    let x_res: usize = 1920;
+    let y_res: usize = 1080;
 
     let right_step = left * x_dist_left / (x_res as f32 / -2.0);
     let down_step = up * y_dist_up / (y_res as f32 / -2.0);
+
+
+    let light = vec![Vector3D::new(-100.0, 0.0, 0.0)];
+
+    let ambient_intensity = 0.2; // Ia
+    let diffuse_reflection_constant = 0.9; // kd
+    let specular_reflection_constant = 0.9; // ks
+    let transmission_coefficient = 0.0; // kt
+
+    let colour = Vector3D::new(220.0, 220.0, 220.0); // white
+
+    let algorithm = Renderer::Whitted;
+    let max_depth = 3;
 
     let mut data: Vec<u8> = Vec::with_capacity(x_res * y_res * 4);
     for y in 0..y_res {
         for x in 0..x_res {
             let point = top_left + right_step * (x as f32) + down_step * (y as f32);
             let ray = Ray::new(origin, point - origin);
-            // println!("{:?}", ray);
-            let hit = model.hits(&ray);
-            if let Some(c) = hit {
-                let  i = lambert(&ray, &c);
-                data.push(0);
-                data.push(i);
-                data.push(0);
-                data.push(255);
-                // println!("Hit");
-            } else {
-                data.push(0);
-                data.push(0);
-                data.push(0);
-                data.push(255);
-            }
+            let i = match algorithm {
+                Renderer::Lambert => lambert::trace(&ray, &model),
+                Renderer::Whitted => whitted::trace(&ray, &model, &light, ambient_intensity, diffuse_reflection_constant,
+                    specular_reflection_constant, transmission_coefficient, max_depth)
+                };
+            data.push((i * colour.x) as u8);
+            data.push((i * colour.y) as u8);
+            data.push((i * colour.z) as u8);
+            data.push(255);
         }
     }
     // For reading and opening files
