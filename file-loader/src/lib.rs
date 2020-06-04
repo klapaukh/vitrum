@@ -1,13 +1,31 @@
+//! The file loader handles reading in 3D models in different file formats and ensuring that
+//! the resulting geometry is created using Virtum's data types so it can be used in the
+//! renderer.
+
 use stl_loader;
 use std::vec::Vec;
 
 
+/// Errors that can be returned from file reading.
 #[derive(Debug)]
 pub enum MeshError {
     UnknownFileType,
     ScanError(stl_loader::StlError)
 }
 
+/// Load a mesh from a file. The file extension is used to determine how to read the file.
+///
+/// If an extension is not recognised, the file will not be read.
+///
+/// # Arguments
+/// * `filename` - the path to the 3D model file.
+///
+/// # Errors
+/// Errors are triggered when:
+/// * File extension is not supported
+/// * File extension did not match content (even if it could have been read with a diffferent extension)
+/// * The file was unable to be opened / read
+/// * There is an error (or unsupported format feature) in the file
 pub fn load_file(filename: &str) -> Result<Vec<stl_loader::Face>, MeshError> {
     println!("Loading file {}", filename);
 
