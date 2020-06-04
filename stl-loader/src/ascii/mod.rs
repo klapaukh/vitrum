@@ -4,6 +4,10 @@ use geometry::{Face, Vector3D};
 use scanner_rust::Scanner;
 use super::common::StlError;
 
+/// Read an ASCII STL file into a Vec<Face>.
+///
+/// #Arguments
+/// * `filename` - the filepath of the ASCII formatted STL file to read.
 pub fn read_file_ascii(filename: &str) -> Result<Vec<Face>, StlError> {
     println!("Reading STL file {}", filename);
     let mut scan = Scanner::scan_path(filename)?;
@@ -27,23 +31,28 @@ pub fn read_file_ascii(filename: &str) -> Result<Vec<Face>, StlError> {
 /// # Arguments
 /// * `scan` - A scanner to the ascii file
 fn read_header_ascii<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Option<String>, StlError> {
+    // The header is always the first line
     let line = match scan.next_line()? {
         None => return Err(StlError::MissingHeader),
         Some(header) => header
     };
 
+    // The header is separated from the magic work "solid" by while space
     let mut iter = line.split_whitespace();
+    // Confirm the file starts with "solid"
     match iter.next() {
         None => return Err(StlError::MissingHeader),
         Some("solid") => (),
         Some(_) => return Err(StlError::MissingHeader)
     };
 
+    // There might be a name of the solid, but it is optional
     let name = match iter.next() {
         Some(name) => Ok(Some(name.to_owned())),
         None => Ok(None)
     };
 
+    // If there is anything else in the header - fail.
     if iter.next().is_some() {
         return Err(StlError::TooMuchInHeader);
     };
@@ -120,6 +129,10 @@ fn ensure_next<T: std::io::Read>(scan: &mut Scanner<T>, expected: String) -> Res
     }
 }
 
+/// Read the next token as an f32, returning an appropriate error if it fails.
+///
+/// # Arguments
+/// * `scan` - The scanner to read.
 fn ensure_f32<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<f32, StlError> {
     let result = scan.next_f32()?;
     match result {
@@ -128,6 +141,10 @@ fn ensure_f32<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<f32, StlError> 
     }
 }
 
+/// Read the next 3 tokens in order as f32s and return them as a Vector3.
+///
+/// #  Arguments
+/// * `scan` - The scanner to read from.
 pub fn read_vector3d<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Vector3D, StlError> {
     Ok(Vector3D {
         x: ensure_f32(scan)?,

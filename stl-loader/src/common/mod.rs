@@ -1,3 +1,5 @@
+//! Errors for STL file reading
+
 use scanner_rust::ScannerError;
 use std::io::Error;
 use std::num::TryFromIntError;
