@@ -5,6 +5,7 @@ members = [
     "file-loader",
     "geometry",
     "live-tracer",
+    "obj-loader",
     "stl-loader",
     "vitrum"
 ]
