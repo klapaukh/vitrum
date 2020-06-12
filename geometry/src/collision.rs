@@ -1,9 +1,11 @@
 use super::Vector3D;
 
+use num::Num;
+
 #[derive(Clone)]
-pub struct Collision<T> {
+pub struct Collision<T, V: Num> {
     pub object: T,
-    pub contact_point: Vector3D,
+    pub contact_point: Vector3D<V>,
     pub distance: f32,
     pub direction: CollisionDirection
 }
@@ -14,7 +16,7 @@ pub enum CollisionDirection {
     BackFace
 }
 
-impl <T> Collision<T> {
+impl <T, V: Num> Collision<T, V> {
     pub fn min(self, other: Self) -> Self {
         if self.distance < other.distance {
             self
@@ -23,7 +25,7 @@ impl <T> Collision<T> {
         }
     }
 
-    pub fn min_optional(self, other: Option<Collision<T>>) -> Collision<T> {
+    pub fn min_optional(self, other: Option<Collision<T, V>>) -> Collision<T, V> {
         if let Some(o) = other {
             self.min(o)
         } else {
