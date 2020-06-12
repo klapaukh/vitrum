@@ -1,29 +1,35 @@
 use std::ops;
 use std::cmp;
 
-/// Data structure to represent a 3 space vector of f32.
+use num::{Num, Float, Signed};
+
+/// Data structure to represent a 3 space numeric vector
 #[derive(Debug, Copy, Clone)]
-pub struct Vector3D {
+pub struct Vector3D<T: Num> {
     /// X coordinate
-    pub x: f32,
+    pub x: T,
     /// Y coordinate
-    pub y: f32,
+    pub y: T,
     /// Z coordinate
-    pub z: f32
+    pub z: T
 }
 
-/// The Zero vector
-pub const ZERO: Vector3D = Vector3D { x: 0.0, y: 0.0, z: 0.0};
-/// The X axis vector
-pub const X:    Vector3D = Vector3D { x: 1.0, y: 0.0, z: 0.0};
-/// The Y axis Vector
-pub const Y:    Vector3D = Vector3D { x: 0.0, y: 1.0, z: 0.0};
-/// The Z axis Vector
-pub const Z:    Vector3D = Vector3D { x: 0.0, y: 0.0, z: 1.0};
+/// Data structure to represent a 3 space numeric vector
+#[derive(Debug, Copy, Clone)]
+pub struct Vector4D<T: Num> {
+    /// X coordinate
+    pub x: T,
+    /// Y coordinate
+    pub y: T,
+    /// Z coordinate
+    pub z: T,
+    /// W coordinate
+    pub w: T
+}
 
-impl Vector3D {
+impl<T: Num> Vector3D<T> {
     /// Create a new vector from 3 points
-    pub fn new(x: f32, y: f32,z: f32) -> Vector3D {
+    pub fn new(x: T, y: T,z: T) -> Vector3D<T> {
         Vector3D {
             x,
             y,
@@ -31,95 +37,142 @@ impl Vector3D {
         }
     }
 
-    /// Create a normalised (unit length) version of the vector
-    pub fn normalize(&self) -> Vector3D {
-        *self / self.length()
-    }
-
-    /// Compute the Euclidean length of the vector
-    pub fn length(&self) -> f32 {
-        f32::sqrt(self.x * self.x +
-                self.y * self.y +
-                self.z * self.z)
-    }
-
     /// Test if this is the zero vector
     pub fn is_zero(&self) -> bool {
-        self.x == 0.0 &&
-        self.y == 0.0 &&
-        self.z == 0.0
+        self.x == T::zero() &&
+        self.y == T::zero() &&
+        self.z == T::zero()
 
     }
 
+    pub fn set_x(&self, value: T) -> Vector3D<T> {
+        Vector3D::new(value,
+                      self.y,
+                      self.z)
+    }
+
+    pub fn set_y(&self, value: T) -> Vector3D<T> {
+        Vector3D::new(self.x,
+                      value,
+                      self.z)
+    }
+
+    pub fn set_z(&self, value: T) -> Vector3D<T> {
+        Vector3D::new(self.x,
+                      self.y,
+                      value)
+    }
+
+    pub fn proj_x(&self) -> Vector3D<T> {
+        Vector3D::new(self.x,
+                      T::zero(),
+                      T::zero())
+    }
+
+    pub fn proj_y(&self) -> Vector3D<T> {
+        Vector3D::new(T::zero(),
+                      self.y,
+                      T::zero())
+    }
+
+    pub fn proj_z(&self) -> Vector3D<T> {
+        Vector3D::new(T::zero(),
+                      T::zero(),
+                      self.z)
+    }
+
+    /// The Zero vector
+    pub fn zero() -> Vector3D<T> {
+        Vector3D { x: T::zero(), y: T::zero(), z: T::zero()}
+    }
+
+    /// The X axis vector
+    pub fn X() -> Vector3D<T> {
+        Vector3D { x: T::one(), y: T::zero(), z: T::zero()}
+    }
+    /// The Y axis Vector
+    pub fn Y() -> Vector3D<T> {
+        Vector3D { x: T::zero(), y: T::one(), z: T::zero()}
+    }
+    /// The Z axis Vector
+    pub fn Z() -> Vector3D<T> {
+        Vector3D { x: T::zero(), y: T::zero(), z: T::one()}
+    }
+}
+
+impl<T: Num + cmp::Ord>  Vector3D<T> {
     /// Vectorised pairwise minimum. Returns a vector of the minimums for each cooridinate.
-    pub fn min(&self , b: Vector3D) -> Vector3D {
+    pub fn min(&self , b: Vector3D<T>) -> Vector3D<T> {
         Vector3D::new(self.x.min(b.x),
                       self.y.min(b.y),
                       self.z.min(b.z))
     }
 
     /// Vectorised pairwise maximum. Returns a vector of the maximums for each cooridinate.
-    pub fn max(&self, b: Vector3D) -> Vector3D {
+    pub fn max(&self, b: Vector3D<T>) -> Vector3D<T> {
         Vector3D::new(self.x.max(b.x),
                       self.y.max(b.y),
                       self.z.max(b.z))
     }
 
-    pub fn min_value(&self) -> f32 {
+    pub fn min_value(&self) -> T {
         self.x.min(self.y).min(self.z)
     }
 
-    pub fn max_value(&self) -> f32 {
+    pub fn max_value(&self) -> T {
+        self.x.max(self.y).max(self.z)
+    }
+}
+
+impl<T: Float>  Vector3D<T> {
+    /// Vectorised pairwise minimum. Returns a vector of the minimums for each cooridinate.
+    pub fn min(&self , b: Vector3D<T>) -> Vector3D<T> {
+        Vector3D::new(self.x.min(b.x),
+                      self.y.min(b.y),
+                      self.z.min(b.z))
+    }
+
+    /// Vectorised pairwise maximum. Returns a vector of the maximums for each cooridinate.
+    pub fn max(&self, b: Vector3D<T>) -> Vector3D<T> {
+        Vector3D::new(self.x.max(b.x),
+                      self.y.max(b.y),
+                      self.z.max(b.z))
+    }
+
+    pub fn min_value(&self) -> T {
+        self.x.min(self.y).min(self.z)
+    }
+
+    pub fn max_value(&self) -> T {
         self.x.max(self.y).max(self.z)
     }
 
-    pub fn abs(&self) -> Vector3D {
+    /// Create a normalised (unit length) version of the vector
+    pub fn normalize(&self) -> Vector3D<T> {
+        *self / self.length()
+    }
+
+    /// Compute the Euclidean length of the vector
+    pub fn length(&self) -> T {
+        T::sqrt(self.x * self.x +
+                self.y * self.y +
+                self.z * self.z)
+    }
+}
+
+impl<T: Num + Signed>  Vector3D<T> {
+    /// Component-wise absolute value
+    pub fn abs(&self) -> Vector3D<T> {
         Vector3D::new(self.x.abs(),
                       self.y.abs(),
                       self.z.abs())
     }
-
-    pub fn set_x(&self, value: f32) -> Vector3D {
-        Vector3D::new(value,
-                      self.y,
-                      self.z)
-    }
-
-    pub fn set_y(&self, value: f32) -> Vector3D {
-        Vector3D::new(self.x,
-                      value,
-                      self.z)
-    }
-
-    pub fn set_z(&self, value: f32) -> Vector3D {
-        Vector3D::new(self.x,
-                      self.y,
-                      value)
-    }
-
-    pub fn proj_x(&self) -> Vector3D {
-        Vector3D::new(self.x,
-                      0.0,
-                      0.0)
-    }
-
-    pub fn proj_y(&self) -> Vector3D {
-        Vector3D::new(0.0,
-                      self.y,
-                      0.0)
-    }
-
-    pub fn proj_z(&self) -> Vector3D {
-        Vector3D::new(0.0,
-                      0.0,
-                      self.z)
-    }
 }
 
-impl ops::Add<Vector3D> for Vector3D {
-    type Output = Vector3D;
+impl<T: Num> ops::Add<Vector3D<T>> for Vector3D<T> {
+    type Output = Vector3D<T>;
 
-    fn add(self, rhs: Vector3D) -> Vector3D {
+    fn add(self, rhs: Vector3D<T>) -> Vector3D<T> {
         Vector3D {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -128,10 +181,10 @@ impl ops::Add<Vector3D> for Vector3D {
     }
 }
 
-impl ops::Sub<Vector3D> for Vector3D {
-    type Output = Vector3D;
+impl<T: Num> ops::Sub<Vector3D<T>> for Vector3D<T> {
+    type Output = Vector3D<T>;
 
-    fn sub(self, rhs: Vector3D) -> Vector3D {
+    fn sub(self, rhs: Vector3D<T>) -> Vector3D<T> {
         Vector3D {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -140,7 +193,7 @@ impl ops::Sub<Vector3D> for Vector3D {
     }
 }
 
-impl ops::BitXor for Vector3D {
+impl<T: Num> ops::BitXor for Vector3D<T> {
     type Output = Self;
 
     /// Vector Cross Product
@@ -153,22 +206,22 @@ impl ops::BitXor for Vector3D {
     }
 }
 
-impl ops::Mul<Vector3D> for Vector3D {
-    type Output = f32;
+impl<T: Num> ops::Mul<Vector3D<T>> for Vector3D<T> {
+    type Output = T;
 
     /// Implements the dot product
-    fn mul(self, rhs: Vector3D) -> f32 {
+    fn mul(self, rhs: Vector3D<T>) -> T {
         self.x * rhs.x +
         self.y * rhs.y +
         self.z * rhs.z
     }
 }
 
-impl ops::Mul<Vector3D> for f32 {
-    type Output = Vector3D;
+impl <T: Num> ops::Mul<Vector3D<T>> for T {
+    type Output = Vector3D<T>;
 
     /// Vector * Scalar
-    fn mul(self, rhs: Vector3D) -> Vector3D {
+    fn mul(self, rhs: Vector3D<T>) -> Vector3D<T> {
         Vector3D {
             x: rhs.x * self,
             y: rhs.y * self,
@@ -177,11 +230,11 @@ impl ops::Mul<Vector3D> for f32 {
     }
 }
 
-impl ops::Mul<f32> for Vector3D {
-    type Output = Vector3D;
+impl<T: Num> ops::Mul<T> for Vector3D<T> {
+    type Output = Vector3D<T>;
 
     /// Implements the scalar multiplcation
-    fn mul(self, rhs: f32) -> Vector3D {
+    fn mul(self, rhs: T) -> Vector3D<T> {
         Vector3D {
             x: rhs * self.x,
             y: rhs * self.y,
@@ -190,11 +243,11 @@ impl ops::Mul<f32> for Vector3D {
     }
 }
 
-impl ops::Div<f32> for Vector3D {
-    type Output = Vector3D;
+impl <T: Num> ops::Div<T> for Vector3D<T> {
+    type Output = Vector3D<T>;
 
     /// Implements scalar division
-    fn div(self, rhs: f32) -> Vector3D {
+    fn div(self, rhs: T) -> Vector3D<T> {
         Vector3D {
             x: self.x / rhs,
             y: self.y / rhs,
@@ -203,7 +256,7 @@ impl ops::Div<f32> for Vector3D {
     }
 }
 
-impl cmp::PartialEq for Vector3D {
+impl <T: Num> cmp::PartialEq for Vector3D<T> {
     fn eq(&self, other: &Self) -> bool {
         self.x == other.x &&
         self.y == other.y &&
@@ -211,7 +264,7 @@ impl cmp::PartialEq for Vector3D {
     }
 }
 
-impl std::fmt::Display for Vector3D {
+impl <T: Num + std::fmt::Display> std::fmt::Display for Vector3D<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({:.2}, {:.2}, {:.2})", self.x, self.y, self.z)
     }
@@ -296,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_min() {
-        let x = Vector3D::new(1.0, 4.0, 3.0);
+        let x: Vector3D<f32> = Vector3D::new(1.0, 4.0, 3.0);
         let y = Vector3D::new(7.0, 2.0, 5.0);
         let z = x.min(y);
         let zz = y.min(x);
