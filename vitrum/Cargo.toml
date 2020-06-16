@@ -11,4 +11,5 @@ argparse    = "0.2.2"
 bvh         = { path = "../bvh" }
 file-loader = { path = "../file-loader" }
 geometry    = { path = "../geometry" }
+num         = "0.3.0"
 png         = "0.15-2"

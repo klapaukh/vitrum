@@ -1,56 +1,58 @@
-use geometry::{Plane, Ray, Collision, Vector3D, X, Y, Z};
+use geometry::{Plane, Ray, Collision, Vector3D};
+
+use num::Float;
+
 use std::marker::PhantomData;
 
 use std::boxed::Box;
 use std::collections::BinaryHeap;
 use std::vec::Vec;
-use std::f32;
 use std::fmt::Display;
 use std::ops::Add;
 
 use std::cmp::{Ord, Ordering};
 
-struct Cost<T> {
+struct Cost<T, V: Float> {
     data: T,
-    cost: f32
+    cost: V
 }
 
-impl <T: Plane<S>, S> Ord for Cost<&BoundingVolumeHierarchy<T, S>> {
+impl <T: Plane<S, V>, S, V: Float> Ord for Cost<&BoundingVolumeHierarchy<T, S, V>, V> {
     fn cmp(&self, other: &Self) -> Ordering {
         // Panics if it is NAN. You cannot have a NAN cost.
         self.partial_cmp(other).unwrap()
     }
 }
 
-impl <T: Plane<S>, S> PartialOrd for Cost<&BoundingVolumeHierarchy<T, S>> {
+impl <T: Plane<S, V>, S, V: Float> PartialOrd for Cost<&BoundingVolumeHierarchy<T, S, V>, V> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         other.cost.partial_cmp(&self.cost)
     }
 }
 
-impl <T: Plane<S>, S> Eq for Cost<&BoundingVolumeHierarchy<T, S>> {
+impl <T: Plane<S, V>, S, V: Float> Eq for Cost<&BoundingVolumeHierarchy<T, S, V>, V> {
 }
 
-impl <T: Plane<S>, S> PartialEq for Cost<&BoundingVolumeHierarchy<T, S>> {
+impl <T: Plane<S, V>, S, V: Float> PartialEq for Cost<&BoundingVolumeHierarchy<T, S, V>, V> {
     fn eq(&self, other: &Self) -> bool {
         self.cost == other.cost
     }
 }
 
 
-pub enum BoundingVolumeHierarchy<T: Plane<S>, S> {
+pub enum BoundingVolumeHierarchy<T: Plane<S, V>, S, V: Float> {
     Node {
-        min: Vector3D,
-        max: Vector3D,
-        left: Box<BoundingVolumeHierarchy<T,S>>,
-        right: Box<BoundingVolumeHierarchy<T,S>>,
+        min: Vector3D<V>,
+        max: Vector3D<V>,
+        left: Box<BoundingVolumeHierarchy<T,S,V>>,
+        right: Box<BoundingVolumeHierarchy<T,S,V>>,
         object_type: PhantomData<S>
     },
     Child (T),
     Empty
 }
 
-impl <T: Plane<S> + Display, S> BoundingVolumeHierarchy<T, S> {
+impl <T: Plane<S, V> + Display, S, V: Float + Display> BoundingVolumeHierarchy<T, S, V> {
     pub fn pretty_print(&self) {
         self.pretty_print_helper(&"".to_owned())
     }
@@ -70,16 +72,16 @@ impl <T: Plane<S> + Display, S> BoundingVolumeHierarchy<T, S> {
     }
 }
 
-impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
-    pub fn leaf(face: T) -> BoundingVolumeHierarchy<T, S> {
+impl <T: Plane<S, V>, S, V: Float> BoundingVolumeHierarchy<T, S, V> {
+    pub fn leaf(face: T) -> BoundingVolumeHierarchy<T, S, V> {
         BoundingVolumeHierarchy::Child(face)
     }
 
-    pub fn empty() -> BoundingVolumeHierarchy<T, S> {
+    pub fn empty() -> BoundingVolumeHierarchy<T, S, V> {
         BoundingVolumeHierarchy::Empty
     }
 
-    pub fn node(left: BoundingVolumeHierarchy<T,S> , right: BoundingVolumeHierarchy<T,S>) -> BoundingVolumeHierarchy<T, S> {
+    pub fn node(left: BoundingVolumeHierarchy<T, S, V> , right: BoundingVolumeHierarchy<T, S, V>) -> BoundingVolumeHierarchy<T, S, V> {
         BoundingVolumeHierarchy::Node {
             min: left.min_extents().min(right.min_extents()),
             max: left.max_extents().max(right.max_extents()),
@@ -89,9 +91,9 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
         }
     }
 
-    fn collide_child<'a>(&'a self, ray: &Ray, t: Vector3D, s: Vector3D,
-                     min_t: &mut f32, result: &mut Option<Collision<S>>,
-                     heap: &mut BinaryHeap<Cost<&'a BoundingVolumeHierarchy<T, S>>>) {
+    fn collide_child<'a>(&'a self, ray: &Ray<V>, t: Vector3D<V>, s: Vector3D<V>,
+                     min_t: &mut V, result: &mut Option<Collision<S, V>>,
+                     heap: &mut BinaryHeap<Cost<&'a BoundingVolumeHierarchy<T, S, V>, V>>) {
         match self {
             BoundingVolumeHierarchy::Empty => (),
             BoundingVolumeHierarchy::Child(p) => {
@@ -112,11 +114,11 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
         }
     }
 
-    fn collide(&self, ray: &Ray, t: Vector3D, s: Vector3D) -> Option<Collision<S>> {
+    fn collide(&self, ray: &Ray<V>, t: Vector3D<V>, s: Vector3D<V>) -> Option<Collision<S, V>> {
         if let BoundingVolumeHierarchy::Node {..} = self {
-            let mut heap: BinaryHeap<Cost<&BoundingVolumeHierarchy<T, S>>> = BinaryHeap::new();
-            let mut min_t = f32::INFINITY;
-            let mut result: Option<Collision<S>> = None;
+            let mut heap: BinaryHeap<Cost<&BoundingVolumeHierarchy<T, S, V>, V>> = BinaryHeap::new();
+            let mut min_t = V::infinity();
+            let mut result: Option<Collision<S, V>> = None;
             {
                 let (h, t) = self.collide_box(t, s);
                 if h {
@@ -140,45 +142,45 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
         None
     }
 
-    fn collide_box(&self, t: Vector3D, s: Vector3D) -> (bool, f32) {
+    fn collide_box(&self, t: Vector3D<V>, s: Vector3D<V>) -> (bool, V) {
         if let BoundingVolumeHierarchy::Node {min, max, ..} = self {
-            let mut min_t = f32::NEG_INFINITY;
-            let mut max_t = f32::INFINITY;
+            let mut min_t = V::neg_infinity();
+            let mut max_t = V::infinity();
 
             let (l ,u) = Self::collide_slab(t.x, s.x, min.x, max.x);
-            min_t = f32::max(min_t, l);
-            max_t = f32::min(max_t, u);
+            min_t = V::max(min_t, l);
+            max_t = V::min(max_t, u);
 
-            if min_t == f32::INFINITY || min_t > max_t {
-                return (false, f32::INFINITY);
+            if min_t == V::infinity() || min_t > max_t {
+                return (false, V::infinity());
             }
             let (l ,u) = Self::collide_slab(t.y, s.y, min.y, max.y);
-            min_t = f32::max(min_t, l);
-            max_t = f32::min(max_t, u);
+            min_t = V::max(min_t, l);
+            max_t = V::min(max_t, u);
 
-            if min_t == f32::INFINITY || min_t > max_t {
-                return (false, f32::INFINITY);
+            if min_t == V::infinity() || min_t > max_t {
+                return (false, V::infinity());
             }
             let (l ,u) = Self::collide_slab(t.z, s.z, min.z, max.z);
-            min_t = f32::max(min_t, l);
-            max_t = f32::min(max_t, u);
+            min_t = V::max(min_t, l);
+            max_t = V::min(max_t, u);
 
-            return if  min_t != f32::INFINITY && max_t >= min_t {
-                if max_t <= 0.0 {
-                    (false, f32::INFINITY)
-                } else if min_t >= 0.0 {
+            return if  min_t != V::infinity() && max_t >= min_t {
+                if max_t <= V::zero() {
+                    (false, V::infinity())
+                } else if min_t >= V::zero() {
                     (true, min_t)
                 } else {
-                    (true, 0.0)
+                    (true, V::zero())
                 }
             } else {
-                (false, f32::INFINITY)
+                (false, V::infinity())
             };
         }
         panic!("Collide_box called on a non node");
     }
 
-    fn collide_slab(t: f32, s: f32, min: f32, max: f32) -> (f32, f32) {
+    fn collide_slab(t: V, s: V, min: V, max: V) -> (V, V) {
         let t_min = (min - s) * t;
         let t_max = (max - s) * t;
         if t_min < t_max {
@@ -189,11 +191,11 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
     }
 
     /// Compute helper values for the slab collision
-    fn compute_t_s(ray: &Ray) -> (Vector3D, Vector3D) {
-        let t = Vector3D::new(1.0 / (X * ray.direction),
-                              1.0 / (Y * ray.direction),
-                              1.0 / (Z * ray.direction));
-        let s = Vector3D::new(X * ray.origin, Y * ray.origin, Z * ray.origin);
+    fn compute_t_s(ray: &Ray<V>) -> (Vector3D<V>, Vector3D<V>) {
+        let t = Vector3D::new(V::one() / (Vector3D::x() * ray.direction),
+                              V::one() / (Vector3D::y() * ray.direction),
+                              V::one() / (Vector3D::z() * ray.direction));
+        let s = Vector3D::new(Vector3D::x() * ray.origin, Vector3D::y() * ray.origin, Vector3D::z() * ray.origin);
         (t, s)
     }
 
@@ -206,12 +208,12 @@ impl <T: Plane<S>, S> BoundingVolumeHierarchy<T, S> {
     }
 }
 
-impl <T: Plane<S> + Clone, S> BoundingVolumeHierarchy<T, S> {
-    pub fn new(faces: Vec<T>) -> BoundingVolumeHierarchy<T, S> {
-        <BoundingVolumeHierarchy<T, S>>::new_helper(faces, 0)
+impl <T: Plane<S, V> + Clone, S, V: Float> BoundingVolumeHierarchy<T, S, V> {
+    pub fn new(faces: Vec<T>) -> BoundingVolumeHierarchy<T, S, V> {
+        <BoundingVolumeHierarchy<T, S, V>>::new_helper(faces, 0)
     }
 
-    fn new_helper(faces: Vec<T>, axis: u8) -> BoundingVolumeHierarchy<T, S> {
+    fn new_helper(faces: Vec<T>, axis: u8) -> BoundingVolumeHierarchy<T, S, V> {
         let helper = |a: &T, b: &T| {
             match axis {
                 0 => a.min_extents().x.partial_cmp(&b.min_extents().x).unwrap(),
@@ -239,36 +241,36 @@ impl <T: Plane<S> + Clone, S> BoundingVolumeHierarchy<T, S> {
 
 }
 
-impl <T: Plane<S>, S> Plane<S> for BoundingVolumeHierarchy<T, S> {
+impl <T: Plane<S, V>, S, V: Float> Plane<S, V> for BoundingVolumeHierarchy<T, S, V> {
 
-    fn hits(&self, ray: &Ray) -> Option<Collision<S>> {
+    fn hits(&self, ray: &Ray<V>) -> Option<Collision<S, V>> {
         match self {
             BoundingVolumeHierarchy::Empty => None,
             BoundingVolumeHierarchy::Child(f) => f.hits(ray),
             BoundingVolumeHierarchy::Node { .. } => {
-                let (t, s) = <BoundingVolumeHierarchy<T,S>>::compute_t_s(ray);
+                let (t, s) = <BoundingVolumeHierarchy<T, S, V>>::compute_t_s(ray);
                 self.collide(ray, t, s)
             }
         }
     }
 
-    fn min_extents(&self) -> Vector3D {
+    fn min_extents(&self) -> Vector3D<V> {
         match self {
-            BoundingVolumeHierarchy::Empty => Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+            BoundingVolumeHierarchy::Empty => Vector3D::new(V::infinity(), V::infinity(), V::infinity()),
             BoundingVolumeHierarchy::Child(f) => f.min_extents(),
             BoundingVolumeHierarchy::Node {min : m, ..} => *m
         }
     }
 
-    fn max_extents(&self) -> Vector3D {
+    fn max_extents(&self) -> Vector3D<V> {
         match self {
-            BoundingVolumeHierarchy::Empty => Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY),
+            BoundingVolumeHierarchy::Empty => Vector3D::new(V::neg_infinity(), V::neg_infinity(), V::neg_infinity()),
             BoundingVolumeHierarchy::Child(f) => f.max_extents(),
             BoundingVolumeHierarchy::Node {max : m, ..} => *m
         }
     }
 
-    fn translate(&self, t: Vector3D) -> Self {
+    fn translate(&self, t: Vector3D<V>) -> Self {
         match self {
             BoundingVolumeHierarchy::Empty => BoundingVolumeHierarchy::Empty,
             BoundingVolumeHierarchy::Child(f) => BoundingVolumeHierarchy::Child(f.translate(t)),
@@ -292,30 +294,30 @@ impl <T: Plane<S>, S> Plane<S> for BoundingVolumeHierarchy<T, S> {
 mod tests {
     use super::BoundingVolumeHierarchy;
     use super::Vector3D;
-    use geometry::{Face, Ray, X, Y};
+    use geometry::{Face, Ray};
     use std::f32;
 
     #[test]
     fn test_straight_on() {
-        let ray = Ray::new(Vector3D::new(1.0, 0.0, 3.0), X);
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.x, s.x, 5.0, 15.0);
+        let ray = Ray::new(Vector3D::new(1.0, 0.0, 3.0), Vector3D::x());
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::collide_slab(t.x, s.x, 5.0, 15.0);
         assert_eq!(a, 4.0);
         assert_eq!(b, 14.0);
     }
 
     #[test]
     fn test_parallel() {
-        let ray = Ray::new(Vector3D::new(0.0, 0.0, 0.0), X);
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.y, s.y, -5.0, 5.0);
+        let ray = Ray::new(Vector3D::new(0.0, 0.0, 0.0), Vector3D::x());
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::collide_slab(t.y, s.y, -5.0, 5.0);
         println!("From {} to {}", a, b);
         assert_eq!(a, f32::NEG_INFINITY);
         assert_eq!(b, f32::INFINITY);
 
-        let ray = Ray::new(Vector3D::new(2.0, 2.0, 2.0), Y);
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.x, s.x, -5.0, 5.0);
+        let ray = Ray::new(Vector3D::new(2.0, 2.0, 2.0), Vector3D::y());
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::collide_slab(t.x, s.x, -5.0, 5.0);
         println!("From {} to {}", a, b);
         assert_eq!(a, f32::NEG_INFINITY);
         assert_eq!(b, f32::INFINITY);
@@ -323,9 +325,9 @@ mod tests {
 
     #[test]
     fn test_parallel_miss() {
-        let ray = Ray::new(Vector3D::new(0.0, 0.0, 0.0), X);
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.y, s.y, 5.0, 10.0);
+        let ray = Ray::new(Vector3D::new(0.0, 0.0, 0.0), Vector3D::x());
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::collide_slab(t.y, s.y, 5.0, 10.0);
         println!("From {} to {}", a, b);
         assert_eq!(a, f32::INFINITY);
         assert_eq!(b, f32::INFINITY);
@@ -335,8 +337,8 @@ mod tests {
     #[test]
     fn test_hit() {
         let ray = Ray::new(Vector3D::new(1.0, 2.0, 3.0), Vector3D::new(1.0, 5.0, 3.0).normalize());
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.x, s.x, 5.0, 15.0);
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>,Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>, Face<f32>, f32>>::collide_slab(t.x, s.x, 5.0, 15.0);
 
         assert_eq!(ray.at(a).x, 5.0);
         assert_eq!(ray.at(b).x, 15.0);
@@ -349,8 +351,8 @@ mod tests {
     #[test]
     fn test_hit2() {
         let ray = Ray::new(Vector3D::new(-1.0, -2.0, -3.0), Vector3D::new(-1.0, -5.0, -3.0).normalize());
-        let (t, s) = <BoundingVolumeHierarchy<Face,Face>>::compute_t_s(&ray);
-        let (a, b) = <BoundingVolumeHierarchy<Face,Face>>::collide_slab(t.x, s.x, 5.0, 15.0);
+        let (t, s) = <BoundingVolumeHierarchy<Face<f32>, Face<f32>, f32>>::compute_t_s(&ray);
+        let (a, b) = <BoundingVolumeHierarchy<Face<f32>,  Face<f32>, f32>>::collide_slab(t.x, s.x, 5.0, 15.0);
 
         assert_eq!(ray.at(a).x, 15.0);
         assert_eq!(ray.at(b).x, 5.0);

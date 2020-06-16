@@ -16,33 +16,42 @@ pub struct Face<T: Float> {
     pub b_normal: Vector3D<T>,
     pub c_normal: Vector3D<T>,
 
-    pub a_texture: Vector3D<T>,
-    pub b_texture: Vector3D<T>,
-    pub c_texture: Vector3D<T>,
+    pub a_texture: Option<Vector3D<T>>,
+    pub b_texture: Option<Vector3D<T>>,
+    pub c_texture: Option<Vector3D<T>>,
 }
 
 impl<T: Float> Face<T> {
-    pub fn new(normal: Vector3D<T>, a: Vector3D<T>, b: Vector3D<T>, c: Vector3D<T>) -> Face<T> {
+
+    pub fn new(a: Vector3D<T>, b: Vector3D<T>, c: Vector3D<T>,
+               face_normal: Vector3D<T>,
+               a_normal: Vector3D<T>, b_normal: Vector3D<T>, c_normal: Vector3D<T>,
+               a_texture: Option<Vector3D<T>>, b_texture: Option<Vector3D<T>>, c_texture: Option<Vector3D<T>>) -> Face<T> {
+
         Face {
-            face_normal: normal,
+            face_normal: face_normal,
 
             a,
             b,
             c,
 
-            a_normal: normal,
-            b_normal: normal,
-            c_normal: normal,
+            a_normal,
+            b_normal,
+            c_normal,
 
-            a_texture: Vector3D::zero(),
-            b_texture: Vector3D::zero(),
-            c_texture: Vector3D::zero()
+            a_texture,
+            b_texture,
+            c_texture
         }
+    }
+
+    pub fn from_points_with_face(normal: Vector3D<T>, a: Vector3D<T>, b: Vector3D<T>, c: Vector3D<T>) -> Face<T> {
+        Self::new(a, b, c, normal, normal, normal, normal, None, None, None)
     }
 
     pub fn from_points(a: Vector3D<T>, b: Vector3D<T>, c: Vector3D<T>) -> Face<T> {
         let normal = ((b - a) ^ (c - b)).normalize();
-        Self::new(normal, a, b, c)
+        Self::from_points_with_face(normal, a, b, c)
     }
 }
 
@@ -139,11 +148,16 @@ impl<T: Float> Plane<Face<T>, T> for Face<T> {
     }
 
     fn translate(&self, t: Vector3D<T>) -> Self {
-        // TODO FIX to handle point normals
-        Face::new(self.face_normal,
-                  self.a + t,
+        Face::new(self.a + t,
                   self.b + t,
-                  self.c + t)
+                  self.c + t,
+                  self.face_normal,
+                  self.a_normal,
+                  self.b_normal,
+                  self.c_normal,
+                  self.a_texture,
+                  self.b_texture,
+                  self.c_texture,)
     }
 }
 

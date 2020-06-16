@@ -5,7 +5,7 @@ use std::vec::Vec;
 use scanner_rust::Scanner;
 
 mod errors;
-use errors::ObjError;
+pub  use errors::ObjError;
 
 mod helpers;
 use helpers::{ObjVertex, ObjNormal, ObjParam, ObjFace};

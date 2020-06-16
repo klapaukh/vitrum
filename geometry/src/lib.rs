@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn test_collision_1() {
-        let t = Face::new(
+        let t = Face::from_points_with_face(
             Vector3D::new(0.0, 0.0, 1.0),
             Vector3D::new(-1.0, 0.0, 0.0),
             Vector3D::new(1.0, 0.0, 0.0),
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_backface_culling(){
-        let t =  Face::new(
+        let t =  Face::from_points_with_face(
             Vector3D::new( 0.0, 0.0, 1.0),
             Vector3D::new(-1.0, 0.0, 0.0),
             Vector3D::new( 1.0, 0.0, 0.0),

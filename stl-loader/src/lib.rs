@@ -17,7 +17,7 @@ pub use geometry::{Face, Vector3D};
 /// # Arguments
 ///
 /// * `filename` - The path to the file to read. This can be either an ASCII or binary STL.
-pub fn read_stl_file(filename: &str) -> Result<Vec<Face>, StlError> {
+pub fn read_stl_file(filename: &str) -> Result<Vec<Face<f32>>, StlError> {
     //  Check to make sure that it is not a binary file first
     let mut f = File::open(filename)?;
     let mut buf = [0;6];

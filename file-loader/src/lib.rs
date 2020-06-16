@@ -3,14 +3,19 @@
 //! renderer.
 
 use stl_loader;
+use obj_loader;
+use geometry::Face;
+
 use std::vec::Vec;
+use std::path::Path;
 
 
 /// Errors that can be returned from file reading.
 #[derive(Debug)]
 pub enum MeshError {
     UnknownFileType,
-    ScanError(stl_loader::StlError)
+    StlScanError(stl_loader::StlError),
+    ObjScanError(obj_loader::ObjError)
 }
 
 /// Load a mesh from a file. The file extension is used to determine how to read the file.
@@ -26,17 +31,22 @@ pub enum MeshError {
 /// * File extension did not match content (even if it could have been read with a diffferent extension)
 /// * The file was unable to be opened / read
 /// * There is an error (or unsupported format feature) in the file
-pub fn load_file(filename: &str) -> Result<Vec<stl_loader::Face>, MeshError> {
+pub fn load_file(filename: &str) -> Result<Vec<Face<f32>>, MeshError> {
     println!("Loading file {}", filename);
 
-    if filename.ends_with(".stl") {
-        match stl_loader::read_stl_file(filename) {
-            Ok(o) => Ok(o),
-            Err(e) => Err(MeshError::ScanError(e))
+    let extension = Path::new(filename).extension().and_then(|e| e.to_str());
+    match extension {
+        None => Err(MeshError::UnknownFileType),
+        Some("stl") => match stl_loader::read_stl_file(filename) {
+                Ok(o) => Ok(o),
+                Err(e) => Err(MeshError::StlScanError(e))
+            },
+        Some("obj") => match obj_loader::read_obj_file(filename) {
+                Ok(o) => Ok(o),
+                Err(e) => Err(MeshError::ObjScanError(e))
+            },
+        Some(_) => Err(MeshError::UnknownFileType)
         }
-    } else {
-        Err(MeshError::UnknownFileType)
-    }
 }
 
 #[cfg(test)]

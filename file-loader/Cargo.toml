@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 geometry = { path = "../geometry" }
+obj-loader = { path = "../obj-loader" }
 stl-loader = { path = "../stl-loader" }
