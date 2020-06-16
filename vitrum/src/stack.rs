@@ -43,8 +43,6 @@ fn pyramid<T: Plane<S, V>, S, V: Float + Signed>(min: Vector3D<V>, max: Vector3D
     let bottom_side = <BoundingVolumeHierarchy<T, S, V>>::node(bottom_left, bottom_right);
     let top_side = <BoundingVolumeHierarchy<T, S, V>>::node(top_left, top_right);
     let bottom = <BoundingVolumeHierarchy<T, S, V>>::node(bottom_side, top_side);
-    let result = <BoundingVolumeHierarchy<T, S, V>>::node(bottom, top);
-
-    result
+    <BoundingVolumeHierarchy<T, S, V>>::node(bottom, top)
 }
 

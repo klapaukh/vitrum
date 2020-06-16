@@ -2,8 +2,8 @@
 //! the resulting geometry is created using Virtum's data types so it can be used in the
 //! renderer.
 
-use stl_loader;
-use obj_loader;
+use stl_loader::StlError;
+use obj_loader::ObjError;
 use geometry::Face;
 
 use std::vec::Vec;
@@ -14,8 +14,8 @@ use std::path::Path;
 #[derive(Debug)]
 pub enum MeshError {
     UnknownFileType,
-    StlScanError(stl_loader::StlError),
-    ObjScanError(obj_loader::ObjError)
+    StlScanError(StlError),
+    ObjScanError(ObjError)
 }
 
 /// Load a mesh from a file. The file extension is used to determine how to read the file.

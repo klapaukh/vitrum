@@ -1,6 +1,5 @@
 use argparse::{ArgumentParser, StoreOption};
 
-use file_loader;
 use geometry::{Vector3D, Ray, Plane};
 
 use bvh::BoundingVolumeHierarchy;

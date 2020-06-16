@@ -29,7 +29,7 @@ impl<T: Float> Face<T> {
                a_texture: Option<Vector3D<T>>, b_texture: Option<Vector3D<T>>, c_texture: Option<Vector3D<T>>) -> Face<T> {
 
         Face {
-            face_normal: face_normal,
+            face_normal,
 
             a,
             b,

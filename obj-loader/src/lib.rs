@@ -25,11 +25,8 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
     let mut normals = Vec::new();
     let mut textures = Vec::new();
     let mut faces = Vec::new();
-    loop {
-        match scan.next_line()? {
-            Some(line) => process_line(line.trim(), &mut vertices, &mut normals, &mut textures, &mut faces)?,
-            None => break
-        }
+    while let Some(line) = scan.next_line()? {
+        process_line(line.trim(), &mut vertices, &mut normals, &mut textures, &mut faces)?
     }
 
     let model = Vec::with_capacity(faces.len());
@@ -39,7 +36,7 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
 
 fn process_line(line: &str, vertices: &mut Vec<ObjVertex>, normals: &mut Vec<ObjNormal>,
                     textures: &mut Vec<ObjParam>, faces: &mut Vec<ObjFace>) -> Result<(), ObjError>{
-    if line.len() == 0 || line.starts_with('#') {
+    if line.is_empty() || line.starts_with('#') {
         // Empty and comment lines can be ignored
         return Ok(());
     }
