@@ -1,22 +1,22 @@
 use super::Vector3D;
 
-use num::Num;
+use num::Float;
 
-#[derive(Clone)]
-pub struct Collision<T, V: Num> {
+#[derive(Clone, Debug)]
+pub struct Collision<T, V: Float> {
     pub object: T,
     pub contact_point: Vector3D<V>,
-    pub distance: f32,
+    pub distance: V,
     pub direction: CollisionDirection
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CollisionDirection {
     FrontFace,
     BackFace
 }
 
-impl <T, V: Num> Collision<T, V> {
+impl <T, V: Float> Collision<T, V> {
     pub fn min(self, other: Self) -> Self {
         if self.distance < other.distance {
             self

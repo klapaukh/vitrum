@@ -1,35 +1,34 @@
-use std::f32;
+use num::Float;
 
 mod vector3;
 mod face;
 mod collision;
 mod plane;
 
-pub use vector3::{ZERO, X, Y, Z};
 pub use vector3::Vector3D;
 pub use face::Face;
 pub use collision::{Collision, CollisionDirection};
 pub use plane::Plane;
 
 #[derive(Debug, Clone)]
-pub struct Ray {
-    pub origin: Vector3D,
-    pub direction: Vector3D
+pub struct Ray<T: Float> {
+    pub origin: Vector3D<T>,
+    pub direction: Vector3D<T>
 }
 
-impl Ray {
-    pub fn new(origin: Vector3D, direction: Vector3D) -> Ray {
+impl<T: Float> Ray<T> {
+    pub fn new(origin: Vector3D<T>, direction: Vector3D<T>) -> Ray<T> {
         Ray { origin, direction }
     }
 
-    pub fn at(&self, t: f32) -> Vector3D {
-        self.origin + (t * self.direction)
+    pub fn at(&self, t: T) -> Vector3D<T> {
+        self.origin + (self.direction * t)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Face, Vector3D, Ray, Plane};
+    use super::{Face, Vector3D, Ray, Plane, CollisionDirection};
 
     #[test]
     fn test_hit_face_on() {
@@ -65,11 +64,13 @@ mod tests {
                                   Vector3D::new(-1.0, 0.0, 0.0),
                                   Vector3D::new( 0.0, 1.0, 0.0));
 
+        // Front face hit
         let hit = t.hits(&Ray::new(Vector3D::new(0.0, 0.5, -10.0), Vector3D::new(0.0, 0.0, 1.0)));
-        assert!(hit.is_some());
+        assert_eq!(hit.unwrap().direction, CollisionDirection::FrontFace);
 
+        // Back face hit
         let hit = t.hits(&Ray::new(Vector3D::new(0.0, 0.5, 10.0), Vector3D::new(0.0, 0.0, -1.0)));
-        assert!(hit.is_none());
+        assert_eq!(hit.unwrap().direction, CollisionDirection::BackFace);
     }
 
     #[test]
@@ -81,8 +82,10 @@ mod tests {
             Vector3D::new( 0.0, 1.0, 0.0)
         );
 
+        // Ray hits back face of triangle
         let h = t.hits(&Ray::new(Vector3D::new(0.0, 0.5, -10.0), Vector3D::new(0.0, 0.0, 1.0)));
-        assert!(h.is_none());
+        assert_eq!(h.unwrap().direction, CollisionDirection::BackFace);
+        // Ray in front of triangle (t < 0)
         let h = t.hits(&Ray::new(Vector3D::new(0.0, 0.5,  10.0), Vector3D::new(0.0, 0.0, 1.0)));
         assert!(h.is_none());
     }

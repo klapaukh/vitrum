@@ -5,7 +5,7 @@ use num::{Num, Float, Signed};
 
 /// Data structure to represent a 3 space numeric vector
 #[derive(Debug, Copy, Clone)]
-pub struct Vector3D<T: Num> {
+pub struct Vector3D<T: Num + Copy> {
     /// X coordinate
     pub x: T,
     /// Y coordinate
@@ -27,7 +27,7 @@ pub struct Vector4D<T: Num> {
     pub w: T
 }
 
-impl<T: Num> Vector3D<T> {
+impl<T: Num + Copy> Vector3D<T> {
     /// Create a new vector from 3 points
     pub fn new(x: T, y: T,z: T) -> Vector3D<T> {
         Vector3D {
@@ -87,40 +87,16 @@ impl<T: Num> Vector3D<T> {
     }
 
     /// The X axis vector
-    pub fn X() -> Vector3D<T> {
+    pub fn x() -> Vector3D<T> {
         Vector3D { x: T::one(), y: T::zero(), z: T::zero()}
     }
     /// The Y axis Vector
-    pub fn Y() -> Vector3D<T> {
+    pub fn y() -> Vector3D<T> {
         Vector3D { x: T::zero(), y: T::one(), z: T::zero()}
     }
     /// The Z axis Vector
-    pub fn Z() -> Vector3D<T> {
+    pub fn z() -> Vector3D<T> {
         Vector3D { x: T::zero(), y: T::zero(), z: T::one()}
-    }
-}
-
-impl<T: Num + cmp::Ord>  Vector3D<T> {
-    /// Vectorised pairwise minimum. Returns a vector of the minimums for each cooridinate.
-    pub fn min(&self , b: Vector3D<T>) -> Vector3D<T> {
-        Vector3D::new(self.x.min(b.x),
-                      self.y.min(b.y),
-                      self.z.min(b.z))
-    }
-
-    /// Vectorised pairwise maximum. Returns a vector of the maximums for each cooridinate.
-    pub fn max(&self, b: Vector3D<T>) -> Vector3D<T> {
-        Vector3D::new(self.x.max(b.x),
-                      self.y.max(b.y),
-                      self.z.max(b.z))
-    }
-
-    pub fn min_value(&self) -> T {
-        self.x.min(self.y).min(self.z)
-    }
-
-    pub fn max_value(&self) -> T {
-        self.x.max(self.y).max(self.z)
     }
 }
 
@@ -160,7 +136,7 @@ impl<T: Float>  Vector3D<T> {
     }
 }
 
-impl<T: Num + Signed>  Vector3D<T> {
+impl<T: Num + Copy + Signed>  Vector3D<T> {
     /// Component-wise absolute value
     pub fn abs(&self) -> Vector3D<T> {
         Vector3D::new(self.x.abs(),
@@ -169,7 +145,7 @@ impl<T: Num + Signed>  Vector3D<T> {
     }
 }
 
-impl<T: Num> ops::Add<Vector3D<T>> for Vector3D<T> {
+impl<T: Num + Copy> ops::Add<Vector3D<T>> for Vector3D<T> {
     type Output = Vector3D<T>;
 
     fn add(self, rhs: Vector3D<T>) -> Vector3D<T> {
@@ -181,7 +157,7 @@ impl<T: Num> ops::Add<Vector3D<T>> for Vector3D<T> {
     }
 }
 
-impl<T: Num> ops::Sub<Vector3D<T>> for Vector3D<T> {
+impl<T: Num + Copy> ops::Sub<Vector3D<T>> for Vector3D<T> {
     type Output = Vector3D<T>;
 
     fn sub(self, rhs: Vector3D<T>) -> Vector3D<T> {
@@ -193,7 +169,7 @@ impl<T: Num> ops::Sub<Vector3D<T>> for Vector3D<T> {
     }
 }
 
-impl<T: Num> ops::BitXor for Vector3D<T> {
+impl<T: Num + Copy> ops::BitXor for Vector3D<T> {
     type Output = Self;
 
     /// Vector Cross Product
@@ -206,7 +182,7 @@ impl<T: Num> ops::BitXor for Vector3D<T> {
     }
 }
 
-impl<T: Num> ops::Mul<Vector3D<T>> for Vector3D<T> {
+impl<T: Num + Copy> ops::Mul<Vector3D<T>> for Vector3D<T> {
     type Output = T;
 
     /// Implements the dot product
@@ -217,11 +193,11 @@ impl<T: Num> ops::Mul<Vector3D<T>> for Vector3D<T> {
     }
 }
 
-impl <T: Num> ops::Mul<Vector3D<T>> for T {
-    type Output = Vector3D<T>;
+impl ops::Mul<Vector3D<f32>> for f32 {
+    type Output = Vector3D<f32>;
 
     /// Vector * Scalar
-    fn mul(self, rhs: Vector3D<T>) -> Vector3D<T> {
+    fn mul(self, rhs: Vector3D<f32>) -> Vector3D<f32> {
         Vector3D {
             x: rhs.x * self,
             y: rhs.y * self,
@@ -230,7 +206,20 @@ impl <T: Num> ops::Mul<Vector3D<T>> for T {
     }
 }
 
-impl<T: Num> ops::Mul<T> for Vector3D<T> {
+impl ops::Mul<Vector3D<f64>> for f64 {
+    type Output = Vector3D<f64>;
+
+    /// Vector * Scalar
+    fn mul(self, rhs: Vector3D<f64>) -> Vector3D<f64> {
+        Vector3D {
+            x: rhs.x * self,
+            y: rhs.y * self,
+            z: rhs.z * self
+        }
+    }
+}
+
+impl<T: Num + Copy> ops::Mul<T> for Vector3D<T> {
     type Output = Vector3D<T>;
 
     /// Implements the scalar multiplcation
@@ -243,7 +232,7 @@ impl<T: Num> ops::Mul<T> for Vector3D<T> {
     }
 }
 
-impl <T: Num> ops::Div<T> for Vector3D<T> {
+impl <T: Num + Copy> ops::Div<T> for Vector3D<T> {
     type Output = Vector3D<T>;
 
     /// Implements scalar division
@@ -256,7 +245,7 @@ impl <T: Num> ops::Div<T> for Vector3D<T> {
     }
 }
 
-impl <T: Num> cmp::PartialEq for Vector3D<T> {
+impl <T: Num + Copy> cmp::PartialEq for Vector3D<T> {
     fn eq(&self, other: &Self) -> bool {
         self.x == other.x &&
         self.y == other.y &&
@@ -264,7 +253,7 @@ impl <T: Num> cmp::PartialEq for Vector3D<T> {
     }
 }
 
-impl <T: Num + std::fmt::Display> std::fmt::Display for Vector3D<T> {
+impl <T: Num + Copy + std::fmt::Display> std::fmt::Display for Vector3D<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({:.2}, {:.2}, {:.2})", self.x, self.y, self.z)
     }
