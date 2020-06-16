@@ -1,4 +1,4 @@
-use argparse::{ArgumentParser, StoreOption};
+use argparse::{ArgumentParser, StoreOption, StoreTrue, Store};
 
 use geometry::{Vector3D, Ray, Plane};
 
@@ -16,6 +16,10 @@ use stack::stack;
 mod lambert;
 mod whitted;
 
+use enum_from_str::ParseEnumVariantError;
+use enum_from_str_derive::FromStr;
+
+#[derive(Debug, Copy, Clone, PartialEq, FromStr)]
 pub enum Renderer {
     Whitted,
     Lambert
@@ -27,14 +31,26 @@ fn deg_to_rad(deg: f32) -> f32{
 
 fn main() {
     let mut filename: Option<String> = None;
+    let mut show_window = false;
+    let mut output_filename = String::from("image.png");
+    let mut algorithm = Renderer::Lambert;
 
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("Render output to image.png");
+        ap.refer(&mut algorithm)
+        .add_option(&["-a", "--algorithm"], Store,
+        "Rendering algorithm to use. Options are: Lambert (default), Whitted.");
         ap.refer(&mut filename)
             .add_option(&["-f", "--file"], StoreOption,
             "File to parse")
             .required();
+        ap.refer(&mut output_filename)
+            .add_option(&["-o", "--output"], Store,
+            "Output image filename. Format  will always be PNG.");
+        ap.refer(&mut show_window)
+            .add_option(&["-w", "--window"], StoreTrue,
+            "Show the image in an interactive window instead of writing out to a file");
         ap.parse_args_or_exit();
     }
 
@@ -104,7 +120,6 @@ fn main() {
 
     let colour = Vector3D::new(220.0, 220.0, 220.0); // white
 
-    let algorithm = Renderer::Whitted;
     let max_depth = 3;
 
     let mut data: Vec<u8> = Vec::with_capacity(x_res * y_res * 4);
@@ -124,7 +139,7 @@ fn main() {
         }
     }
     // For reading and opening files
-    let path = Path::new(r"image.png");
+    let path = Path::new(&output_filename);
     let file = File::create(path).unwrap();
     let w = BufWriter::new(file);
 

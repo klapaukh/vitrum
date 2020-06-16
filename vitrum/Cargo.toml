@@ -9,7 +9,13 @@ edition = "2018"
 [dependencies]
 argparse    = "0.2.2"
 bvh         = { path = "../bvh" }
+enum_from_str = "0.1.0"
+enum_from_str_derive = "0.1.0"
 file-loader = { path = "../file-loader" }
 geometry    = { path = "../geometry" }
 num         = "0.3.0"
+piston = "0.50.0"
+piston2d-graphics = "0.36.0"
+pistoncore-glutin_window = "0.64.0"
+piston2d-opengl_graphics = "0.72.0"
 png         = "0.15-2"
