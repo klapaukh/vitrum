@@ -1,3 +1,5 @@
+use geometry::Vector3D;
+
 #[derive(Debug, Clone)]
 pub struct ObjVertex {
     pub x: f32,
@@ -6,11 +8,7 @@ pub struct ObjVertex {
     pub w: f32
 }
 
-pub struct ObjNormal {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
+pub type ObjNormal = Vector3D<f32>;
 
 pub struct ObjParam {
     pub u: f32,

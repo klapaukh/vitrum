@@ -17,7 +17,7 @@ pub use geometry::{Face, Vector3D};
 /// # Arguments
 ///
 /// * `filename` - The path to the file to read. This must be either an ASCII OBJ file.
-pub fn read_obj_file(filename: &str) -> Result<Vec<Face>, ObjError> {
+pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
     //  Check to make sure that it is not a binary file first
     let mut scan = Scanner::scan_path(filename)?;
 
