@@ -14,8 +14,7 @@ enum_from_str_derive = "0.1.0"
 file-loader = { path = "../file-loader" }
 geometry    = { path = "../geometry" }
 num         = "0.3.0"
-piston = "0.50.0"
-piston2d-graphics = "0.36.0"
-pistoncore-glutin_window = "0.64.0"
-piston2d-opengl_graphics = "0.72.0"
+pixels      = "0.0.4"
 png         = "0.15-2"
+winit       = "0.22.0"
+winit_input_helper = "0.6.0"
