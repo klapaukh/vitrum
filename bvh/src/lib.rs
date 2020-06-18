@@ -39,7 +39,7 @@ impl <T: Plane<S, V>, S, V: Float> PartialEq for Cost<&BoundingVolumeHierarchy<T
     }
 }
 
-
+#[derive(Debug)]
 pub enum BoundingVolumeHierarchy<T: Plane<S, V>, S, V: Float> {
     Node {
         min: Vector3D<V>,
