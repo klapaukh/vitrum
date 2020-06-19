@@ -102,7 +102,7 @@ impl World {
                         self.renderer.max_depth,
                     ),
                 };
-                data[(y * x_res * 4) + (x * 4) + 0] = (i * colour.x) as u8;
+                data[(y * x_res * 4) + (x * 4)    ] = (i * colour.x) as u8;
                 data[(y * x_res * 4) + (x * 4) + 1] = (i * colour.y) as u8;
                 data[(y * x_res * 4) + (x * 4) + 2] = (i * colour.z) as u8;
                 data[(y * x_res * 4) + (x * 4) + 3] = 255;
@@ -184,7 +184,7 @@ fn main() {
     }
 
     let model = BoundingVolumeHierarchy::new(model);
-    let model = stack(model);
+    //let model = stack(model);
     println!(
         "BVH with extents {} {}",
         model.min_extents(),
@@ -198,8 +198,10 @@ fn main() {
 
     let dx = model.max_extents().x - model.min_extents().x;
     let dist = (dx / 1.0) / f32::tan(90.0 / 2.0);
+    let dist = (model.max_extents() - model.min_extents()).length();
 
     let origin = model_center - (dist * forwards);
+  
 
     // println!("x = {}, y = {}, z = {}", left, up, forwards);
 
@@ -220,8 +222,7 @@ fn main() {
 
     if !show_window {
         let buffer_size = (x_res * y_res * 4) as usize;
-        let mut data: Vec<u8> = Vec::with_capacity(buffer_size);
-        data.resize(buffer_size, 0);
+        let mut data: Vec<u8> = vec![0; buffer_size];
 
         world.render(&mut data[..], x_res as usize, y_res as usize);
 
@@ -263,14 +264,8 @@ fn main() {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
             world.render(pixels.get_frame(), x_res as usize, y_res as usize);
-            if pixels
-                .render()
-                .map_err(|e| {
-                    println!("pixels.render() failed: {}", e);
-                    e
-                })
-                .is_err()
-            {
+            if let Err(e) = pixels.render() {
+                println!("pixels.render() failed: {}", e);
                 *control_flow = ControlFlow::Exit;
                 return;
             }

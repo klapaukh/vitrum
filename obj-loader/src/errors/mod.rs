@@ -25,8 +25,6 @@ pub enum ObjError {
     UnexpectedEndOfFile(String),
     /// Expect a float, but did not get one
     NotAFloat(String),
-    /// Expect an usize, but did not get one
-    NotAnInt(String),
     // Face without enough vertices to specify it (< 3)
     NotEnoughVerticesInFace(usize)
 }

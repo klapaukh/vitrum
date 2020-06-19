@@ -12,6 +12,9 @@ use helpers::{ObjVertex, ObjNormal, ObjParam, ObjFace};
 
 pub use geometry::{Face, Vector3D};
 
+#[macro_use]
+extern crate approx;
+
 /// Read in and parse an ascii OBJ file
 ///
 /// # Arguments
@@ -21,6 +24,7 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
     //  Check to make sure that it is not a binary file first
     let mut scan = Scanner::scan_path(filename)?;
 
+    // Create lists to fill populate with data from the file
     let mut vertices = Vec::new();
     let mut normals = Vec::new();
     let mut textures = Vec::new();
@@ -29,9 +33,28 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
         process_line(line.trim(), &mut vertices, &mut normals, &mut textures, &mut faces)?
     }
 
-    let model = Vec::with_capacity(faces.len());
+    // We now have the list of faces, but currently as indexes into other arrays.
+    // Convert them now into actual faces
+    let mut model = Vec::with_capacity(faces.len());
+
+    for face in faces {
+        let av = get_element_from(face.av, &vertices[..]);
+        let bv = get_element_from(face.bv, &vertices[..]);
+        let cv = get_element_from(face.cv, &vertices[..]);
+
+        model.push(Face::from_points(av.to_vector_3d(), bv.to_vector_3d(), cv.to_vector_3d()));
+    }
 
     Ok(model)
+}
+
+pub fn get_element_from<T: Copy>(index: usize, data: &[T]) -> T {
+    if index > 0 {
+        // 1 based index going forwards
+        data[index as usize -  1]
+    } else {
+        panic!("Cannot have an index of {} in a face!", index)
+    }
 }
 
 fn process_line(line: &str, vertices: &mut Vec<ObjVertex>, normals: &mut Vec<ObjNormal>,
@@ -51,9 +74,11 @@ fn process_line(line: &str, vertices: &mut Vec<ObjVertex>, normals: &mut Vec<Obj
             "v" => process_vertex(&mut token_iter, vertices)?,
             "vn" => process_normal(&mut token_iter, normals)?,
             "vt" => process_texture(&mut token_iter, textures)?,
-            "f" => process_face(&mut token_iter, faces)?,
+            "f" => process_face(&mut token_iter, faces, vertices.len(), textures.len(), normals.len())?,
             "l" => (), // we are ignoring lines for now
             "g" => (), // we are ignoring group for now
+            "o" => (), // we are ignoring objects for now
+            "s" => (), // we are ignoring smooth shading instructions for now
             "mtllib" => (), // we are ignoring materials files for now
             "usemtl" => (), // we are ignoring materials for now
             other => return Err(ObjError::UnknownCommand(other.to_string()))
@@ -67,10 +92,10 @@ fn process_line(line: &str, vertices: &mut Vec<ObjVertex>, normals: &mut Vec<Obj
 
 fn process_vertex(token_iter: &mut str::SplitWhitespace, vertices: &mut Vec<ObjVertex>) -> Result<(), ObjError> {
     vertices.push(ObjVertex {
-        x: ensure(token_iter.next())?,
-        y: ensure(token_iter.next())?,
-        z: ensure(token_iter.next())?,
-        w: maybe(token_iter.next(), 1.0)?,
+        x: ensure(token_iter.next(), "vertex x")?,
+        y: ensure(token_iter.next(), "vertex y")?,
+        z: ensure(token_iter.next(), "vertex z")?,
+        w: maybe(token_iter.next(), 1.0, "vertex w")?,
     });
 
     Ok(())
@@ -78,34 +103,35 @@ fn process_vertex(token_iter: &mut str::SplitWhitespace, vertices: &mut Vec<ObjV
 
 fn process_normal(token_iter: &mut str::SplitWhitespace, normals: &mut Vec<ObjNormal>) -> Result<(), ObjError> {
     normals.push(ObjNormal {
-        x: ensure(token_iter.next())?,
-        y: ensure(token_iter.next())?,
-        z: ensure(token_iter.next())?,
+        x: ensure(token_iter.next(), "normal x")?,
+        y: ensure(token_iter.next(), "normal y")?,
+        z: ensure(token_iter.next(), "normal z")?,
     });
     Ok(())
 }
 
 fn process_texture(token_iter: &mut str::SplitWhitespace, textures: &mut Vec<ObjParam>) -> Result<(), ObjError> {
     textures.push(ObjParam {
-        u: ensure(token_iter.next())?,
-        v: maybe(token_iter.next(), 0.0)?,
-        w: maybe(token_iter.next(), 0.0)?,
+        u: ensure(token_iter.next(), "texture x")?,
+        v: maybe(token_iter.next(), 0.0, "texture y")?,
+        w: maybe(token_iter.next(), 0.0, "texture z")?,
     });
 
     Ok(())
 }
 
-fn process_face(token_iter: &mut str::SplitWhitespace, faces: &mut Vec<ObjFace>) -> Result<(), ObjError> {
-    let triples: Vec<(usize, usize, usize)>  = token_iter.take(3).map(to_triple).collect::<Result<Vec<(usize, usize, usize)>, ObjError>>()?;
+fn process_face(token_iter: &mut str::SplitWhitespace, faces: &mut Vec<ObjFace>,
+                vertex_size: usize, texture_size: usize, normal_size: usize)  -> Result<(), ObjError> {
+    let triples: Vec<(usize, usize, usize)> = token_iter.map(to_triple).map(|b| b.and_then(|a| Ok(to_positive_triple(a, vertex_size, texture_size, normal_size)))).collect::<Result<Vec<(usize, usize, usize)>, ObjError>>()?;
 
     if triples.len() < 3 {
         return Err(ObjError::NotEnoughVerticesInFace(triples.len()));
     }
 
-    for index in 0 .. triples.len() - 2 {
-        let a = triples[index];
-        let b = triples[index + 1];
-        let c = triples[index + 2];
+    for index in 1 .. triples.len() - 1 {
+        let a = triples[0];
+        let b = triples[index];
+        let c = triples[index + 1];
 
         faces.push(ObjFace {
             av: a.0,
@@ -122,25 +148,44 @@ fn process_face(token_iter: &mut str::SplitWhitespace, faces: &mut Vec<ObjFace>)
     Ok(())
 }
 
-fn to_triple(token: &str) -> Result<(usize, usize, usize), ObjError> {
+fn to_triple(token: &str) -> Result<(isize, isize, isize), ObjError> {
     let mut parts = token.split('/');
-    let vertex: usize = ensure(parts.next())?;
-    let texture: usize = maybe(parts.next(),0)?;
-    let normal: usize = maybe(parts.next(),0)?;
+    let vertex: isize = ensure(parts.next(), "to_triple vertex")?;
+    let texture: isize = maybe(parts.next(),0, "to_triple texture")?;
+    let normal: isize = maybe(parts.next(),0, "to_triple normal")?;
     assert!(parts.next().is_none());
-    Ok((vertex,normal,texture))
+    Ok((vertex,texture,normal))
+}
+
+fn to_positive_triple(fields: (isize, isize, isize), vertex_size: usize, texture_size: usize, normal_size: usize) -> (usize, usize, usize) {
+    let vertex = if fields.0 < 0 {
+        vertex_size as isize + fields.0 + 1
+    } else {
+        fields.0
+    };
+    let texture: isize = if fields.1 < 0 {
+        texture_size as isize + fields.1 + 1
+    } else {
+        fields.1
+    };
+    let normal: isize = if fields.2 < 0 {
+        normal_size as isize + fields.2 + 1
+    } else {
+        fields.2
+    };
+    (vertex as usize, texture as usize, normal as usize)
 }
 
 /// Read the next token as an <F>, returning an appropriate error if it fails.
 ///
 /// # Arguments
 /// * `scan` - The scanner to read.
-fn ensure<F: str::FromStr + std::fmt::Debug>(token: Option<&str>) -> Result<F, ObjError> {
+fn ensure<F: str::FromStr>(token: Option<&str>, context: &str) -> Result<F, ObjError> {
     match token {
         None => Err(ObjError::UnexpectedEndOfFile(String::from("Expected a value"))),
         Some(s) => match s.parse() {
             Ok(v) => Ok(v),
-            Err(_) => {println!("Error!!"); Err(ObjError::NotAFloat(s.to_string()))}
+            Err(_) => {println!("Error!!"); Err(ObjError::NotAFloat(format!("Failed to ensure convert {} in {}", s, context)))}
         }
     }
 }
@@ -150,13 +195,13 @@ fn ensure<F: str::FromStr + std::fmt::Debug>(token: Option<&str>) -> Result<F, O
 /// # Arguments
 /// * `scan` - The scanner to read.
 /// * `default` - The value to return if there are no more values to read
-fn maybe<F: str::FromStr>(token: Option<&str>, default: F) -> Result<F, ObjError> {
+fn maybe<F: str::FromStr>(token: Option<&str>, default: F, context: &str) -> Result<F, ObjError> {
     match token {
         None => Ok(default),
         Some("") => Ok(default),
         Some(s) => match s.parse() {
             Ok(v) => Ok(v),
-            Err(_) => Err(ObjError::NotAFloat(s.to_string()))
+            Err(_) => Err(ObjError::NotAFloat(format!("Failed to maybe convert {} in {}", s, context)))
         }
     }
 }
@@ -166,16 +211,16 @@ mod tests {
 
     #[test]
     fn test_ensure() {
-        assert!(super::ensure::<f32>(None).is_err());
-        assert_eq!(5.5, super::ensure(Some("5.5")).unwrap());
-        assert_ne!(5.5, super::ensure(Some("5")).unwrap());
+        assert!(super::ensure::<f32>(None, "test").is_err());
+        assert_eq!(5.5, super::ensure(Some("5.5"), "test").unwrap());
+        assert_ne!(5.5, super::ensure(Some("5"), "test").unwrap());
     }
 
     #[test]
     fn test_maybe() {
-        assert_eq!(6, super::maybe(None, 6).unwrap());
-        assert_eq!(5.5, super::maybe(Some("5.5"), 3.0).unwrap());
-        assert_ne!(3, super::maybe(Some("5"),3).unwrap());
+        assert_eq!(6, super::maybe(None, 6, "test").unwrap());
+        assert_eq!(5.5, super::maybe(Some("5.5"), 3.0, "test").unwrap());
+        assert_ne!(3, super::maybe(Some("5"),3, "test").unwrap());
     }
 
     #[test]
@@ -244,5 +289,42 @@ mod tests {
         assert_eq!(1.0, d.u);
         assert_eq!(0.0, d.v);
         assert_eq!(0.0, d.w);
+    }
+
+    #[test]
+    fn test_divide_face() {
+        let mut v = Vec::new();
+        let mut t = Vec::new();
+        let mut n = Vec::new();
+        let mut f = Vec::new();
+        assert!(super::process_line("f 1 2 3 4", &mut v, &mut n, &mut t, &mut f).is_ok());
+        assert!(v.is_empty());
+        assert!(t.is_empty());
+        assert!(n.is_empty());
+        assert_eq!(2, f.len());
+    }
+
+    #[test]
+    fn test_get_element_from() {
+        let data = vec![1,2,3,4,5];
+        for i in 1 .. 6  {
+            assert_eq!(super::get_element_from(i, &data[..]), i);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_element_from_panic() {
+        let data = vec![1,2,3,4,5];
+        super::get_element_from(0, &data[..]);
+    }
+
+    #[test]
+    fn test_read_triples() {
+        let line = "1/2/3";
+        assert_eq!(super::to_triple(line).unwrap(), (1,2,3));
+        assert_eq!(super::to_triple(line).and_then(|a| Ok(super::to_positive_triple(a, 5, 5, 5))).unwrap(), (1,2,3));
+        let line = "1/-2/3";
+        assert_eq!(super::to_triple(line).and_then(|a| Ok(super::to_positive_triple(a, 5, 5, 5))).unwrap(), (1,4,3));
     }
 }
