@@ -1,16 +1,16 @@
 use super::{Collision, Vector3D, Ray};
 use num::{Float};
 
-pub trait Plane<T, V: Float> {
-    fn hits(&self, ray: &Ray<V>) -> Option<Collision<T,V>>;
+pub trait Plane<V: Float> {
+    fn hits(&self, ray: &Ray<V>) -> Option<Collision<V>>;
     fn min_extents(&self) -> Vector3D<V>;
     fn max_extents(&self) -> Vector3D<V>;
     fn translate(&self, t: Vector3D<V>) -> Self;
 }
 
 
-impl <T: Plane<S, V>, S, V: Float> Plane<S, V> for Vec<T> {
-    fn hits(&self, ray: &Ray<V>) -> Option<Collision<S, V>> {
+impl <T: Plane<V>, V: Float> Plane<V> for Vec<T> {
+    fn hits(&self, ray: &Ray<V>) -> Option<Collision<V>> {
         let mut plane = None;
         for p in self {
             plane = match p.hits(ray) {

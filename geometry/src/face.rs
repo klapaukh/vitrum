@@ -53,6 +53,37 @@ impl<T: Float> Face<T> {
         let normal = ((b - a) ^ (c - b)).normalize();
         Self::from_points_with_face(normal, a, b, c)
     }
+
+    /// Linearly interpolate a normal for a point of this face.
+    /// It is assumed that point is on this face.
+    pub fn normal_at(&self, point: Vector3D<T>) -> Vector3D<T> {
+        // Represent point in terms of barycentric coordinates
+
+        // Invert the matrix that is the triangle space
+        let det =  self.a.x * (self.b.y * self.c.z - self.c.y * self.b.z)
+                 - self.b.x * (self.a.y * self.c.z - self.c.y * self.a.z)
+                 + self.c.x * (self.a.y * self.b.z - self.b.y * self.a.z);
+
+        let x_fac = Vector3D::new(
+                     (self.b.y * self.c.z - self.c.y * self.b.z) / det,
+                     -(self.b.x * self.c.z - self.c.x * self.b.z) / det,
+                     (self.b.x * self.c.y - self.c.x * self.b.y) / det);
+        let y_fac = Vector3D::new(
+                     -(self.a.y * self.c.z - self.c.y * self.a.z) / det,
+                     (self.a.x * self.c.z - self.c.x * self.a.z) / det,
+                     -(self.a.x * self.c.y - self.c.x * self.a.y) / det);
+        let z_fac = Vector3D::new(
+                     (self.a.y * self.b.z - self.b.y * self.a.z) / det,
+                     -(self.a.x * self.b.z - self.b.x * self.a.z) / det,
+                     (self.a.x * self.b.y - self.b.x * self.a.y) / det);
+
+        // Multiply the inverse by the point to transform it to barycentric coordinates
+        let bary_coords = Vector3D::new(x_fac * point, y_fac * point, z_fac * point);
+
+        // Linearly interpolate
+
+        self.a_normal * bary_coords.x + self.b_normal * bary_coords.y + self.c_normal * bary_coords.z
+    }
 }
 
 impl<T: Float + std::fmt::Display> Display for Face<T> {
@@ -68,8 +99,8 @@ impl<T: Float> PartialEq for Face<T> {
     }
 }
 
-impl<T: Float> Plane<Face<T>, T> for Face<T> {
-    fn hits(&self, ray: &Ray<T>) -> Option<Collision<Face<T>, T>> {
+impl<T: Float> Plane<T> for Face<T> {
+    fn hits(&self, ray: &Ray<T>) -> Option<Collision<T>> {
         let epsilon: T = T::from(1e-5)?;
 
         // Check if ray parallel to triangle (i.e. orthogonal to normal)
@@ -131,7 +162,7 @@ impl<T: Float> Plane<Face<T>, T> for Face<T> {
         // println!("Hit!");
         Some(
             Collision {
-                object: self.clone(),
+                normal: self.normal_at(hit),
                 contact_point: hit,
                 distance: t,
                 direction: collision_face
@@ -175,5 +206,10 @@ mod tests {
         let normal = Vector3D::new(0.0, -1.0, 0.0);
 
         assert_eq!(f.face_normal, normal);
+    }
+
+    #[test]
+    fn test_interpolate_normal() {
+        //Do something h ere.
     }
 }

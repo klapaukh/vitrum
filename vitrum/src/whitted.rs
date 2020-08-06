@@ -1,6 +1,6 @@
-use geometry::{Plane, Ray, Face, Vector3D, CollisionDirection};
+use geometry::{Plane, Ray, Vector3D, CollisionDirection};
 
-pub fn trace<T:Plane<Face<f32>, f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
+pub fn trace<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
     ambient_intensity: f32, diffuse_reflection_constant: f32,
     specular_reflection_constant: f32, transmission_coefficient: f32,
     max_depth: u8) -> f32 {
@@ -10,7 +10,7 @@ pub fn trace<T:Plane<Face<f32>, f32>>(ray: &Ray<f32>, model: &T, lights: &[Vecto
             max_depth)
 }
 
-fn trace_down<T:Plane<Face<f32>, f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
+fn trace_down<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
     i_a: f32, k_d: f32, k_s: f32, k_t: f32, depth: u8) -> f32 {
         if depth == 0 {
             return 0.0;
@@ -25,8 +25,8 @@ fn trace_down<T:Plane<Face<f32>, f32>>(ray: &Ray<f32>, model: &T, lights: &[Vect
                     CollisionDirection::BackFace => -0.00001,
                     CollisionDirection::FrontFace => 0.00001
                 };
-                let contact = c.contact_point + contact_shift_factor * c.object.face_normal;
-                let normal = c.object.face_normal;
+                let contact = c.contact_point + contact_shift_factor * c.normal;
+                let normal = c.normal;
 
                 // Direct diffuse illumination
                 {

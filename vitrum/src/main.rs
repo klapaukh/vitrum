@@ -36,7 +36,7 @@ enum Renderer {
 #[derive(Debug)]
 struct World {
     pub camera: Camera,
-    pub model: BoundingVolumeHierarchy<Face<f32>, Face<f32>, f32>,
+    pub model: BoundingVolumeHierarchy<Face<f32>, f32>,
     pub renderer: RenderSetup,
 }
 
@@ -201,7 +201,7 @@ fn main() {
     let dist = (model.max_extents() - model.min_extents()).length();
 
     let origin = model_center - (dist * forwards);
-  
+
 
     // println!("x = {}, y = {}, z = {}", left, up, forwards);
 
