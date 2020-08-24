@@ -1,17 +1,17 @@
-use geometry::{Plane, Ray, Vector3D, CollisionDirection};
+use geometry::{Plane, Ray, Vec3, CollisionDirection};
 
-pub fn trace<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
-    ambient_intensity: f32, diffuse_reflection_constant: f32,
-    specular_reflection_constant: f32, transmission_coefficient: f32,
-    max_depth: u8) -> f32 {
+pub fn trace<T:Plane>(ray: &Ray, model: &T, lights: &[Vec3],
+    ambient_intensity: f64, diffuse_reflection_constant: f64,
+    specular_reflection_constant: f64, transmission_coefficient: f64,
+    max_depth: u8) -> f64 {
         trace_down(ray, model, lights,
             ambient_intensity, diffuse_reflection_constant,
             specular_reflection_constant, transmission_coefficient,
             max_depth)
 }
 
-fn trace_down<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
-    i_a: f32, k_d: f32, k_s: f32, k_t: f32, depth: u8) -> f32 {
+fn trace_down<T:Plane>(ray: &Ray, model: &T, lights: &[Vec3],
+    i_a: f64, k_d: f64, k_s: f64, k_t: f64, depth: u8) -> f64 {
         if depth == 0 {
             return 0.0;
         }
@@ -33,13 +33,13 @@ fn trace_down<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
                     let mut total_diffuse = 0.0;
                     for light in lights {
                         let light_dir = *light - contact;
-                        let light_t = light_dir.length();
+                        let light_t = light_dir.norm();
                         let light_dir = light_dir.normalize();
                         let light_ray = Ray::new(contact, light_dir);
                         let hit = model.hits(&light_ray);
                         total_diffuse += match hit {
                             Some(c) if c.distance < light_t => 0.0,
-                            _ => normal * light_dir
+                            _ => normal.dot(&light_dir)
                         }
                     }
                     total_i += k_d * total_diffuse;
@@ -47,7 +47,7 @@ fn trace_down<T:Plane<f32>>(ray: &Ray<f32>, model: &T, lights: &[Vector3D<f32>],
 
                 // Reflected light
                 {
-                    let vv = ray.direction / f32::abs(ray.direction * normal);
+                    let vv = ray.direction / f64::abs(ray.direction.dot(&normal));
                     let reflected_dir = vv + (2.0 * normal);
                     let reflected_ray = Ray::new(contact, reflected_dir);
                     let s = trace_down(&reflected_ray, model, lights, i_a, k_d, k_s, k_t, depth - 1);

@@ -1,10 +1,10 @@
 use geometry::{Ray, Collision, Plane};
 
-fn lambert(ray: &Ray<f32>, collision: &Collision<f32>) -> f32 {
-    1.0 - (collision.normal.normalize() * ray.direction.normalize())
+fn lambert(ray: &Ray, collision: &Collision) -> f64 {
+    1.0 - (collision.normal.dot(&ray.direction))
 }
 
-pub fn trace<T:Plane<f32>>(ray: &Ray<f32>, model: &T) -> f32 {
+pub fn trace<T:Plane>(ray: &Ray, model: &T) -> f64 {
      // println!("{:?}", ray);
      let hit = model.hits(&ray);
      if let Some(c) = hit {

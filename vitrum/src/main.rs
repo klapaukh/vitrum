@@ -1,10 +1,10 @@
 use argparse::{ArgumentParser, Store, StoreOption, StoreTrue};
 
-use geometry::{Face, Plane, Ray, Vector3D};
+use geometry::{Face, Plane, Ray, Vec3};
 
 use bvh::BoundingVolumeHierarchy;
 
-use std::f32;
+use std::f64;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -36,7 +36,7 @@ enum Renderer {
 #[derive(Debug)]
 struct World {
     pub camera: Camera,
-    pub model: BoundingVolumeHierarchy<Face<f32>, f32>,
+    pub model: BoundingVolumeHierarchy<Face>,
     pub renderer: RenderSetup,
 }
 
@@ -48,46 +48,46 @@ struct RenderSetup {
 
 #[derive(Debug, Copy, Clone)]
 struct Camera {
-    pub position: Vector3D<f32>,
-    pub forwards: Vector3D<f32>,
-    pub up: Vector3D<f32>,
+    pub position: Vec3,
+    pub forwards: Vec3,
+    pub up: Vec3,
 }
 
-fn deg_to_rad(deg: f32) -> f32 {
-    std::f32::consts::PI * deg / 180.0
+fn deg_to_rad(deg: f64) -> f64 {
+    std::f64::consts::PI * deg / 180.0
 }
 
 impl World {
     pub fn render(&self, data: &mut [u8], x_res: usize, y_res: usize) {
 
-        let x_fov: f32 = deg_to_rad(90.0);
-        let y_fov: f32 = deg_to_rad(90.0);
+        let x_fov: f64 = deg_to_rad(90.0);
+        let y_fov: f64 = deg_to_rad(90.0);
 
 
-        let left = (self.camera.forwards ^ self.camera.up).normalize();
+        let left = self.camera.forwards.cross(&self.camera.up).normalize();
 
-        let x_dist_left: f32 = f32::tan(x_fov / 2.0);
-        let y_dist_up: f32 = f32::tan(y_fov / 2.0);
+        let x_dist_left: f64 = f64::tan(x_fov / 2.0);
+        let y_dist_up: f64 = f64::tan(y_fov / 2.0);
 
-        let right_step = left * x_dist_left / (x_res as f32 / -2.0);
-        let down_step = self.camera.up * y_dist_up / (y_res as f32 / -2.0);
+        let right_step = left * x_dist_left / (x_res as f64 / -2.0);
+        let down_step = self.camera.up * y_dist_up / (y_res as f64 / -2.0);
 
         let top_center = self.camera.position + self.camera.forwards + y_dist_up * self.camera.up;
 
         let top_left = top_center + left * x_dist_left;
 
-        let light = vec![Vector3D::new(-100.0, 0.0, 0.0)];
+        let light = vec![Vec3::new(-100.0, 0.0, 0.0)];
 
         let ambient_intensity = 0.2; // Ia
         let diffuse_reflection_constant = 0.9; // kd
         let specular_reflection_constant = 0.9; // ks
         let transmission_coefficient = 0.0; // kt
 
-        let colour = Vector3D::new(20.0, 120.0, 220.0); // white
+        let colour = Vec3::new(20.0, 120.0, 220.0); // white
 
         for y in 0..y_res {
             for x in 0..x_res {
-                let point = top_left + right_step * (x as f32) + down_step * (y as f32);
+                let point = top_left + right_step * (x as f64) + down_step * (y as f64);
                 let ray = Ray::new(self.camera.position, point - self.camera.position);
                 let i = match self.renderer.algorithm {
                     Renderer::Lambert => lambert::trace(&ray, &self.model),
@@ -111,21 +111,21 @@ impl World {
     }
 
     pub fn step_left(&mut self) {
-        let left = (self.camera.forwards ^ self.camera.up).normalize();
-        self.camera.position = self.camera.position + left;
+        let left = self.camera.forwards.cross(&self.camera.up).normalize();
+        self.camera.position += left;
     }
 
     pub fn step_right(&mut self) {
-        let right = -1.0 * (self.camera.forwards ^ self.camera.up).normalize();
-        self.camera.position = self.camera.position + right;
+        let right = -1.0 * self.camera.forwards.cross(&self.camera.up).normalize();
+        self.camera.position += right;
     }
 
     pub fn step_forwards(&mut self) {
-        self.camera.position = self.camera.position + self.camera.forwards;
+        self.camera.position += self.camera.forwards;
     }
 
     pub fn step_back(&mut self) {
-        self.camera.position = self.camera.position + -1.0 * self.camera.forwards;
+        self.camera.position += self.camera.forwards;
     }
 }
 
@@ -170,19 +170,6 @@ fn main() {
 
     let model = file_loader::load_file(&filename).unwrap();
 
-    let mut min = Vector3D::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
-    let mut max = Vector3D::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
-
-    for face in &model {
-        min = min.min(face.a);
-        min = min.min(face.b);
-        min = min.min(face.c);
-
-        max = max.max(face.a);
-        max = max.max(face.b);
-        max = max.max(face.c);
-    }
-
     let model = BoundingVolumeHierarchy::new(model);
     //let model = stack(model);
     println!(
@@ -191,14 +178,14 @@ fn main() {
         model.max_extents()
     );
 
-    let up = Vector3D::new(0.0, 1.0, 0.0).normalize();
-    let forwards = Vector3D::new(0.0, 0.0, 1.0).normalize();
+    let up = Vec3::new(0.0, 1.0, 0.0).normalize();
+    let forwards = Vec3::new(0.0, 0.0, 1.0).normalize();
 
     let model_center = (model.min_extents() + model.max_extents()) / 2.0;
 
     let dx = model.max_extents().x - model.min_extents().x;
-    let dist = (dx / 1.0) / f32::tan(90.0 / 2.0);
-    let dist = (model.max_extents() - model.min_extents()).length();
+    let dist = (dx / 1.0) / f64::tan(90.0 / 2.0);
+    let dist = (model.max_extents() - model.min_extents()).norm();
 
     let origin = model_center - (dist * forwards);
 

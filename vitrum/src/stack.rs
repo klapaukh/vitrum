@@ -1,27 +1,26 @@
-use geometry::{Plane, Vector3D};
+use geometry::{Plane, Vec3};
 use bvh::BoundingVolumeHierarchy;
 use num::{Float, Signed};
 
-pub fn stack<T: Plane<V>, V: Float + Signed>(model: BoundingVolumeHierarchy<T, V>) -> BoundingVolumeHierarchy<T, V> {
+pub fn stack<T: Plane>(model: BoundingVolumeHierarchy<T>) -> BoundingVolumeHierarchy<T> {
     let min_extents = model.min_extents();
     let max_extents = model.max_extents();
-    let size = (max_extents - min_extents).abs().min_value();
-    let factor = V::from(2 << 1).unwrap();
+    let size = (max_extents - min_extents).abs().min();
+    let factor = (2 << 1) as f64;
     pyramid(min_extents, min_extents + (max_extents - min_extents) * factor, size, &model, min_extents)
 }
 
-fn pyramid<T: Plane<V>, V: Float + Signed>(min: Vector3D<V>, max: Vector3D<V>, size: V,  model: &BoundingVolumeHierarchy<T, V>, model_min: Vector3D<V>) -> BoundingVolumeHierarchy<T, V> {
-    let current_size = (max - min).abs().min_value();
+fn pyramid<T: Plane>(min: Vec3, max: Vec3, size: f64,  model: &BoundingVolumeHierarchy<T>, model_min: Vec3) -> BoundingVolumeHierarchy<T> {
+    let current_size = (max - min).abs().min();
 
-    let two = V::from(2.0).unwrap();
-    if current_size <= two * size {
+    if current_size <= 2.0 * size {
         let shift = min - model_min;
         return model.translate(shift);
     }
 
     // recursively draw the pyramid
 
-    let center_shift = (max - min) / two;
+    let center_shift = (max - min) / 2.0;
     //draw the bottom layer
 
     let center = min + center_shift;
@@ -29,20 +28,25 @@ fn pyramid<T: Plane<V>, V: Float + Signed>(min: Vector3D<V>, max: Vector3D<V>, s
     // bottom left
     let bottom_left = pyramid(min, center, size, model, model_min);
 
-    let bottom_right = pyramid(min + center_shift.proj_x(), center + center_shift.proj_x(), size, model, model_min);
+    let center_x = Vec3::new(center_shift.x, 0.0, 0.0);
+    let center_y = Vec3::new(0.0, center_shift.y, 0.0);
+    let center_z = Vec3::new(0.0, 0.0, center_shift.z);
+    let center_xz = Vec3::new(center_shift.x, 0.0, center_shift.z);
 
-    let top_left = pyramid(min + center_shift.proj_z(), center + center_shift.proj_z(), size, model, model_min);
+    let bottom_right = pyramid(min + center_x, center + center_x, size, model, model_min);
 
-    let top_right = pyramid(min + center_shift.set_y(V::zero()), center + center_shift.set_y(V::zero()), size, model, model_min);
+    let top_left = pyramid(min + center_z, center + center_z, size, model, model_min);
+
+    let top_right = pyramid(min + center_xz, center + center_xz, size, model, model_min);
 
     // central tower thing
-    let top = pyramid(center - (center_shift / two).set_y(V::zero()),
-                               center + center_shift - (center_shift / two).set_y(V::zero()),
+    let top = pyramid(center - (center_xz / 2.0),
+                               center + center_shift - (center_xz / 2.0),
                                size, model, model_min);
 
-    let bottom_side = <BoundingVolumeHierarchy<T, V>>::node(bottom_left, bottom_right);
-    let top_side = <BoundingVolumeHierarchy<T, V>>::node(top_left, top_right);
-    let bottom = <BoundingVolumeHierarchy<T, V>>::node(bottom_side, top_side);
-    <BoundingVolumeHierarchy<T, V>>::node(bottom, top)
+    let bottom_side = <BoundingVolumeHierarchy<T>>::node(bottom_left, bottom_right);
+    let top_side = <BoundingVolumeHierarchy<T>>::node(top_left, top_right);
+    let bottom = <BoundingVolumeHierarchy<T>>::node(bottom_side, top_side);
+    <BoundingVolumeHierarchy<T>>::node(bottom, top)
 }
 
