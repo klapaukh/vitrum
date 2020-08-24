@@ -1,16 +1,16 @@
-use super::{Collision, Vector3D, Ray};
+use super::{Collision, Vec3, Ray};
 use num::{Float};
 
-pub trait Plane<V: Float> {
-    fn hits(&self, ray: &Ray<V>) -> Option<Collision<V>>;
-    fn min_extents(&self) -> Vector3D<V>;
-    fn max_extents(&self) -> Vector3D<V>;
-    fn translate(&self, t: Vector3D<V>) -> Self;
+pub trait Plane {
+    fn hits(&self, ray: &Ray) -> Option<Collision>;
+    fn min_extents(&self) -> Vec3;
+    fn max_extents(&self) -> Vec3;
+    fn translate(&self, t: Vec3) -> Self;
 }
 
 
-impl <T: Plane<V>, V: Float> Plane<V> for Vec<T> {
-    fn hits(&self, ray: &Ray<V>) -> Option<Collision<V>> {
+impl<T: Plane> Plane for Vec<T> {
+    fn hits(&self, ray: &Ray) -> Option<Collision> {
         let mut plane = None;
         for p in self {
             plane = match p.hits(ray) {
@@ -25,23 +25,23 @@ impl <T: Plane<V>, V: Float> Plane<V> for Vec<T> {
         plane
     }
 
-    fn min_extents(&self) -> Vector3D<V> {
-        let mut min = Vector3D::new(V::infinity(), V::infinity(), V::infinity());
+    fn min_extents(&self) -> Vec3 {
+        let mut min = Vec3::new(f64::infinity(), f64::infinity(), f64::infinity());
         for f in self {
-            min = min.min(f.min_extents());
+            min = min.inf(&f.min_extents());
         }
         min
     }
 
-    fn max_extents(&self) -> Vector3D<V> {
-        let mut max = Vector3D::new(V::neg_infinity(), V::neg_infinity(), V::neg_infinity());
+    fn max_extents(&self) -> Vec3 {
+        let mut max = Vec3::new(f64::neg_infinity(), f64::neg_infinity(), f64::neg_infinity());
         for f in self {
-            max = max.max(f.max_extents());
+            max = max.sup(&f.max_extents());
         }
         max
     }
 
-    fn translate(&self, t: Vector3D<V>) -> Self {
+    fn translate(&self, t: Vec3) -> Self {
         self.iter().map(|value| {
             value.translate(t)
         }).collect()

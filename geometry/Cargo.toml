@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 scanner-rust = "1.2.4"
+nalgebra = "0.21.1"
 num = "0.2.1"

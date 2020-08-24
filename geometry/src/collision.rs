@@ -1,12 +1,10 @@
-use super::Vector3D;
-
-use num::Float;
+use super::Vec3;
 
 #[derive(Clone, Debug)]
-pub struct Collision<V: Float> {
-    pub contact_point: Vector3D<V>,
-    pub normal: Vector3D<V>,
-    pub distance: V,
+pub struct Collision {
+    pub contact_point: Vec3,
+    pub normal: Vec3,
+    pub distance: f64,
     pub direction: CollisionDirection
 }
 
@@ -16,7 +14,7 @@ pub enum CollisionDirection {
     BackFace
 }
 
-impl <V: Float> Collision<V> {
+impl Collision {
     pub fn min<'a>(self, other: Self) -> Self {
         if self.distance < other.distance {
             self
@@ -25,7 +23,7 @@ impl <V: Float> Collision<V> {
         }
     }
 
-    pub fn min_optional(self, other: Option<Collision<V>>) -> Collision<V> {
+    pub fn min_optional(self, other: Option<Collision>) -> Collision {
         if let Some(o) = other {
             self.min(o)
         } else {
