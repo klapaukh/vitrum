@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 geometry = { path = "../geometry" }
+num-traits = "0.2.12"
 scanner-rust = "1.2.4"

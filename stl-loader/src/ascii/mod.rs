@@ -1,20 +1,21 @@
 //! Functions for reading ASCII STL files
 
-use geometry::{Face, Vector3D};
+use geometry::{Face, Vec3};
 use scanner_rust::Scanner;
 use super::common::StlError;
+use num_traits::identities::Zero;
 
 /// Read an ASCII STL file into a Vec<Face>.
 ///
 /// #Arguments
 /// * `filename` - the filepath of the ASCII formatted STL file to read.
-pub fn read_file_ascii(filename: &str) -> Result<Vec<Face<f32>>, StlError> {
+pub fn read_file_ascii(filename: &str) -> Result<Vec<Face>, StlError> {
     println!("Reading STL file {}", filename);
     let mut scan = Scanner::scan_path(filename)?;
 
     let name = read_header_ascii(&mut scan)?;
     println!("Reading solid with name {:?}", name);
-    let mut faces: Vec<Face<f32>> = Vec::new();
+    let mut faces: Vec<Face> = Vec::new();
     loop {
         let result = read_body_ascii(&mut scan, &name)?;
         if let Some(f) = result {
@@ -72,7 +73,7 @@ fn read_header_ascii<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Option<S
 /// * Err - if there was a reading error
 /// * Ok(None) - if there were no more faces in the file and the end of file marker was reached
 /// * OK(Some(face)) - if there was a face read
-fn read_body_ascii<T: std::io::Read>(scan: &mut Scanner<T>, name: &Option<String>) -> Result<Option<Face<f32>>, StlError>  {
+fn read_body_ascii<T: std::io::Read>(scan: &mut Scanner<T>, name: &Option<String>) -> Result<Option<Face>, StlError>  {
     let result = scan.next()?;
     match result {
         None => Err(StlError::NoEndSolid),
@@ -145,12 +146,12 @@ fn ensure_f32<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<f32, StlError> 
 ///
 /// #  Arguments
 /// * `scan` - The scanner to read from.
-pub fn read_vector3d<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Vector3D<f32>, StlError> {
-    Ok(Vector3D {
-        x: ensure_f32(scan)?,
-        y: ensure_f32(scan)?,
-        z: ensure_f32(scan)?
-    })
+pub fn read_vector3d<T: std::io::Read>(scan: &mut Scanner<T>) -> Result<Vec3, StlError> {
+    Ok(Vec3::new(
+        ensure_f32(scan)? as f64,
+        ensure_f32(scan)? as f64,
+        ensure_f32(scan)? as f64
+    ))
 }
 
 

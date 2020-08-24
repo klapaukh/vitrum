@@ -10,14 +10,14 @@ mod binary;
 mod common;
 
 pub use common::StlError;
-pub use geometry::{Face, Vector3D};
+pub use geometry::{Face, Vec3};
 
 /// Read in and parse and STL file
 ///
 /// # Arguments
 ///
 /// * `filename` - The path to the file to read. This can be either an ASCII or binary STL.
-pub fn read_stl_file(filename: &str) -> Result<Vec<Face<f32>>, StlError> {
+pub fn read_stl_file(filename: &str) -> Result<Vec<Face>, StlError> {
     //  Check to make sure that it is not a binary file first
     let mut f = File::open(filename)?;
     let mut buf = [0;6];
