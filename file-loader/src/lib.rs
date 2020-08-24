@@ -31,7 +31,7 @@ pub enum MeshError {
 /// * File extension did not match content (even if it could have been read with a diffferent extension)
 /// * The file was unable to be opened / read
 /// * There is an error (or unsupported format feature) in the file
-pub fn load_file(filename: &str) -> Result<Vec<Face<f32>>, MeshError> {
+pub fn load_file(filename: &str) -> Result<Vec<Face>, MeshError> {
     println!("Loading file {}", filename);
 
     let extension = Path::new(filename).extension().and_then(|e| e.to_str());
