@@ -8,19 +8,16 @@ mod errors;
 pub  use errors::ObjError;
 
 mod helpers;
-use helpers::{ObjVertex, ObjNormal, ObjParam, ObjFace};
+use helpers::{ObjVertex, ObjNormal, ObjParam, ObjFace, from_homogenous};
 
-pub use geometry::{Face, Vector3D};
-
-#[macro_use]
-extern crate approx;
+pub use geometry::{Face, Vec3};
 
 /// Read in and parse an ascii OBJ file
 ///
 /// # Arguments
 ///
 /// * `filename` - The path to the file to read. This must be either an ASCII OBJ file.
-pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
+pub fn read_obj_file(filename: &str) -> Result<Vec<Face>, ObjError> {
     //  Check to make sure that it is not a binary file first
     let mut scan = Scanner::scan_path(filename)?;
 
@@ -42,7 +39,7 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face<f32>>, ObjError> {
         let bv = get_element_from(face.bv, &vertices[..]);
         let cv = get_element_from(face.cv, &vertices[..]);
 
-        model.push(Face::from_points(av.to_vector_3d(), bv.to_vector_3d(), cv.to_vector_3d()));
+        model.push(Face::from_points(from_homogenous(&av), from_homogenous(&bv), from_homogenous(&cv)));
     }
 
     Ok(model)
@@ -91,22 +88,22 @@ fn process_line(line: &str, vertices: &mut Vec<ObjVertex>, normals: &mut Vec<Obj
 }
 
 fn process_vertex(token_iter: &mut str::SplitWhitespace, vertices: &mut Vec<ObjVertex>) -> Result<(), ObjError> {
-    vertices.push(ObjVertex {
-        x: ensure(token_iter.next(), "vertex x")?,
-        y: ensure(token_iter.next(), "vertex y")?,
-        z: ensure(token_iter.next(), "vertex z")?,
-        w: maybe(token_iter.next(), 1.0, "vertex w")?,
-    });
+    vertices.push(ObjVertex::new(
+        ensure(token_iter.next(), "vertex x")?,
+        ensure(token_iter.next(), "vertex y")?,
+        ensure(token_iter.next(), "vertex z")?,
+        maybe(token_iter.next(), 1.0, "vertex w")?
+        ));
 
     Ok(())
 }
 
 fn process_normal(token_iter: &mut str::SplitWhitespace, normals: &mut Vec<ObjNormal>) -> Result<(), ObjError> {
-    normals.push(ObjNormal {
-        x: ensure(token_iter.next(), "normal x")?,
-        y: ensure(token_iter.next(), "normal y")?,
-        z: ensure(token_iter.next(), "normal z")?,
-    });
+    normals.push(ObjNormal::new(
+        ensure(token_iter.next(), "normal x")?,
+        ensure(token_iter.next(), "normal y")?,
+        ensure(token_iter.next(), "normal z")?,
+    ));
     Ok(())
 }
 
