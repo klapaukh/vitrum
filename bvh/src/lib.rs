@@ -160,7 +160,7 @@ impl <T: Plane> BoundingVolumeHierarchy<T> {
             min_t = f64::max(min_t, l);
             max_t = f64::min(max_t, u);
 
-            return if  min_t.is_infinite() && min_t.is_sign_positive() && max_t >= min_t {
+            return if  !(min_t.is_infinite() && min_t.is_sign_positive()) && max_t >= min_t {
                 if max_t <= 0.0 {
                     (false, f64::infinity())
                 } else if min_t >= 0.0 {
