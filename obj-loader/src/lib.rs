@@ -39,7 +39,15 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face>, ObjError> {
         let bv = get_element_from(face.bv, &vertices[..]);
         let cv = get_element_from(face.cv, &vertices[..]);
 
-        model.push(Face::from_points(from_homogenous(&av), from_homogenous(&bv), from_homogenous(&cv)));
+        if face.an > 0 && face.bn > 0 && face.cn > 0 {
+            let an = get_element_from(face.an, &normals[..]);
+            let bn = get_element_from(face.bn, &normals[..]);
+            let cn = get_element_from(face.cn, &normals[..]);
+
+            model.push(Face::from_points_with_normals(from_homogenous(&av), from_homogenous(&bv), from_homogenous(&cv), an, bn, cn));
+        } else {
+            model.push(Face::from_points(from_homogenous(&av), from_homogenous(&bv), from_homogenous(&cv)));
+        }
     }
 
     Ok(model)
@@ -48,9 +56,9 @@ pub fn read_obj_file(filename: &str) -> Result<Vec<Face>, ObjError> {
 pub fn get_element_from<T: Copy>(index: usize, data: &[T]) -> T {
     if index > 0 {
         // 1 based index going forwards
-        data[index as usize -  1]
+        data[index -  1]
     } else {
-        panic!("Cannot have an index of {} in a face!", index)
+        panic!("Cannot have a negative index ({}) in a face after conversion!", index)
     }
 }
 
