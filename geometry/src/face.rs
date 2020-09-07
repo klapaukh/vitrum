@@ -43,6 +43,22 @@ impl Face {
         }
     }
 
+    pub fn from_points_with_normals(a: Vec3, b: Vec3, c: Vec3, an: Vec3, bn: Vec3, cn: Vec3) -> Face {
+        let face_normal = ((an + bn + cn) / 3.0).normalize();
+        Face {
+            face_normal,
+            a,
+            b,
+            c,
+            a_normal : an.normalize(),
+            b_normal : bn.normalize(),
+            c_normal : cn.normalize(),
+            a_texture: None,
+            b_texture: None,
+            c_texture: None
+        }
+    }
+
     pub fn from_points_with_face(normal: Vec3, a: Vec3, b: Vec3, c: Vec3) -> Face {
         let n = normal.normalize();
         Face {
@@ -132,8 +148,8 @@ impl Plane for Face {
             return None;
         }
 
-        let interpolated_normal = u * self.a_normal + v * self.b_normal + w * self.c_normal;
-
+        let interpolated_normal = (u * self.a_normal + v * self.b_normal + w * self.c_normal).normalize();
+        //println!("-- ({:0.2},{:0.2},{:0.2}) {:?}", u, v, w, interpolated_normal);
         Some(
             Collision {
                 normal: interpolated_normal,
