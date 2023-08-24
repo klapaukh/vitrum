@@ -1,6 +1,7 @@
 use geometry::{Ray, Collision, Plane};
 
 fn lambert(ray: &Ray, collision: &Collision) -> f64 {
+//   println!("{:?}", collision.normal);
     1.0 - (collision.normal.dot(&ray.direction))
 }
 

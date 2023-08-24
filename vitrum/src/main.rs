@@ -2,6 +2,8 @@ use argparse::{ArgumentParser, Store, StoreOption, StoreTrue};
 
 use geometry::{Face, Plane, Ray, Vec3};
 
+use nalgebra::{Rotation3, Unit};
+
 use bvh::BoundingVolumeHierarchy;
 
 use std::f64;
@@ -59,15 +61,13 @@ fn deg_to_rad(deg: f64) -> f64 {
 
 impl World {
     pub fn render(&self, data: &mut [u8], x_res: usize, y_res: usize) {
-
-        let x_fov: f64 = deg_to_rad(90.0);
+        //print!("Rendering start - ");
         let y_fov: f64 = deg_to_rad(90.0);
-
 
         let left = self.camera.forwards.cross(&self.camera.up).normalize();
 
-        let x_dist_left: f64 = f64::tan(x_fov / 2.0);
         let y_dist_up: f64 = f64::tan(y_fov / 2.0);
+        let x_dist_left: f64 = y_dist_up * x_res as f64 / y_res as f64;
 
         let right_step = left * x_dist_left / (x_res as f64 / -2.0);
         let down_step = self.camera.up * y_dist_up / (y_res as f64 / -2.0);
@@ -108,6 +108,8 @@ impl World {
                 data[(y * x_res * 4) + (x * 4) + 3] = 255;
             }
         }
+
+        //println!("complete");
     }
 
     pub fn step_left(&mut self) {
@@ -125,7 +127,23 @@ impl World {
     }
 
     pub fn step_back(&mut self) {
-        self.camera.position += self.camera.forwards;
+        self.camera.position -= self.camera.forwards;
+    }
+
+    pub fn rotate(&mut self, rot: Rotation3<f64>, screen_ratio: f64) {
+        let y_fov: f64 = deg_to_rad(90.0);
+
+        let left = self.camera.forwards.cross(&self.camera.up).normalize();
+
+        let y_dist_up: f64 = f64::tan(y_fov / 2.0);
+        let x_dist_left: f64 = y_dist_up * screen_ratio;
+
+        let forwards_dist = f64::min(y_dist_up, x_dist_left).abs();
+        let center =  self.camera.position +  self.camera.forwards * forwards_dist;
+
+        self.camera.position = rot * (self.camera.position - center) + center;
+        self.camera.up       = rot * self.camera.up;
+        self.camera.forwards = rot * self.camera.forwards;
     }
 }
 
@@ -173,7 +191,8 @@ fn main() {
     let model = BoundingVolumeHierarchy::new(model);
     //let model = stack(model);
     println!(
-        "BVH with extents {} {}",
+        "BVH has {} faces with extents {} {}",
+        model.size(),
         model.min_extents(),
         model.max_extents()
     );
@@ -192,7 +211,7 @@ fn main() {
 
     // println!("x = {}, y = {}, z = {}", left, up, forwards);
 
-    // println!("x_dist = {:.2}, y_dist = {:.2}", x_dist_left, y_dist_up);
+    // println!("origin = {:.2}, forwards = {:.2}", origin, forwards);
 
     let mut world = World {
         camera: Camera {
@@ -247,6 +266,7 @@ fn main() {
         Pixels::new(x_res as u32, y_res as u32, surface_texture).unwrap()
     };
 
+    let mut last_mouse_pos: Option<Vec3> = None;
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
@@ -274,6 +294,33 @@ fn main() {
                 world.step_back();
             }
 
+            if input.mouse_pressed(0) {
+                println!("Click!");
+                if let Some((x,y)) = input.mouse() {
+                    last_mouse_pos = Some(screen_to_sphere(x as f64, y as f64, x_res as f64, y_res as f64));
+                }
+            } else if input.mouse_held(0){
+                println!("Hold!");
+                if let Some((x,y)) = input.mouse() {
+                    let current_mouse_pos = screen_to_sphere(x as f64, y as f64, x_res as f64, y_res as f64);
+                    if let Some(p1) = last_mouse_pos {
+                        // Do a movement
+                        arcball_rotate(&p1, &current_mouse_pos, &mut world, x_res as f64/ y_res as f64);
+                    }
+                    last_mouse_pos = Some(current_mouse_pos);
+                }
+            } else if input.mouse_released(0) {
+                println!("Release!");
+                if let Some((x,y)) = input.mouse() {
+                    let current_mouse_pos = screen_to_sphere(x as f64, y as f64, x_res as f64, y_res as f64);
+                    if let Some(p1) = last_mouse_pos {
+                        // Do a movement
+                        arcball_rotate(&p1, &current_mouse_pos, &mut world, x_res as f64/ y_res as f64);
+                    }
+                }
+                last_mouse_pos = None;
+            }
+
             // Adjust high DPI factor
             if let Some(factor) = input.scale_factor_changed() {
                 hidpi_factor = factor;
@@ -288,4 +335,46 @@ fn main() {
             window.request_redraw();
         }
     });
+}
+
+/// Convert xy screen coordinates to a unit sphere mapped to the screen for arc ball
+fn screen_to_sphere(x: f64, y: f64, x_res: f64, y_res: f64) -> Vec3 {
+
+    print!("Mouse at point ({:0.1}, {:0.1}) -> ", x, y);
+
+    let x = 2.0 * (x / x_res as f64 - 0.5);
+    let y = -2.0 * (y / y_res as f64 - 0.5);
+
+    let sum_sq = x*x + y*y;
+    let z = if sum_sq >  1.0 {
+            0.0
+        } else {
+            f64::sqrt(1.0 - sum_sq)
+        };
+
+    println!("({:0.2}, {:0.2}, {:0.2}) {:0.2}", x, y, z, sum_sq);
+    Vec3::new(x,y,z)
+}
+
+fn arcball_rotate(start: &Vec3, end: &Vec3, world: &mut World, screen_ratio: f64) {
+    // This assumes UP is the y axis, which isn't right, it is the camera up
+    // Align up and left with the camera
+
+    let up = world.camera.up;
+    let forwards = world.camera.forwards;
+    let left = up.cross(&forwards).normalize();
+
+    let start = start.x * left + start.y * up + start.z * forwards;
+    let end   =   end.x * left +   end.y * up +   end.z * forwards;
+
+    let axis = Unit::new_normalize(start.cross(&end));
+    let angle: f64 = f64::acos(f64::min(1.0, start.dot(&end)/ (start.norm() * end.norm())));
+
+    //println!("Arcballing {:?} -> {:?} Giving {:0.3} around {:?}", start, end, angle, axis);
+    if angle < 1e-2 {
+        return;
+    }
+
+    let rotation = Rotation3::from_axis_angle(&axis, angle);
+    world.rotate(rotation, screen_ratio);
 }

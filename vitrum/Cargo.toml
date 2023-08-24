@@ -13,6 +13,7 @@ enum_from_str = "0.1.0"
 enum_from_str_derive = "0.1.0"
 file-loader = { path = "../file-loader" }
 geometry    = { path = "../geometry" }
+nalgebra    = "0.21.1"
 num         = "0.3.0"
 pixels      = "0.0.4"
 png         = "0.15-2"
